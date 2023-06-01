@@ -9,6 +9,10 @@ import com.dqtri.mango.safeguard.model.Submission;
 import com.dqtri.mango.safeguard.model.dto.PageCriteria;
 import com.dqtri.mango.safeguard.model.dto.payload.SubmissionPayload;
 import com.dqtri.mango.safeguard.repository.SubmissionRepository;
+import io.swagger.v3.oas.annotations.OpenAPIDefinition;
+import io.swagger.v3.oas.annotations.info.Info;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -23,12 +27,13 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-
-@RequiredArgsConstructor
 @RestController
+@RequiredArgsConstructor
+@SecurityRequirement(name = "access_token")
+@Tag(name = "Submission API", description = "Submissions ...")
+@OpenAPIDefinition(info = @Info(title = "Submission API", version = "v1"))
 public class SubmissionController {
 
     private final SubmissionRepository submissionRepository;
@@ -85,3 +90,4 @@ public class SubmissionController {
         );
     }
 }
+
