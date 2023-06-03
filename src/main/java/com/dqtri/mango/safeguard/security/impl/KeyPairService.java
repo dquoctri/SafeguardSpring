@@ -17,13 +17,13 @@ public class KeyPairService {
 
     public KeyPair createKeyPair() throws NoSuchAlgorithmException {
         KeyPairGenerator keyGenerator = KeyPairGenerator.getInstance("RSA");
-        keyGenerator.initialize(1024);
+        keyGenerator.initialize(2048);
         return keyGenerator.genKeyPair();
     }
 
     public PrivateKey generateNewPrivateKey() throws NoSuchAlgorithmException {
         KeyPairGenerator keyGenerator = KeyPairGenerator.getInstance("RSA");
-        keyGenerator.initialize(1024);
+        keyGenerator.initialize(2048);
         KeyPair keyPair = keyGenerator.genKeyPair();
         return keyPair.getPrivate();
     }
@@ -41,7 +41,7 @@ public class KeyPairService {
         return keyFactory.generatePrivate(keySpecPKCS8);
     }
 
-    private PublicKey decodePublicKey(String publicKey) throws NoSuchAlgorithmException, InvalidKeySpecException {
+    public PublicKey decodePublicKey(String publicKey) throws NoSuchAlgorithmException, InvalidKeySpecException {
         KeyFactory keyFactory = KeyFactory.getInstance("RSA");
         X509EncodedKeySpec keySpecPKCS8 = new X509EncodedKeySpec(Base64.getDecoder().decode(publicKey));
         return keyFactory.generatePublic(keySpecPKCS8);
@@ -55,11 +55,9 @@ public class KeyPairService {
         return Base64.getEncoder().encodeToString(publicKey.getEncoded());
     }
 
-    private String convertToPublicKey(String key) {
-        StringBuilder result = new StringBuilder();
-        result.append("-----BEGIN PUBLIC KEY-----\n");
-        result.append(key);
-        result.append("\n-----END PUBLIC KEY-----");
-        return result.toString();
+    public String convertToPublicKey(String key) {
+        return"-----BEGIN PUBLIC KEY-----\n" +
+                key +
+                "\n-----END PUBLIC KEY-----";
     }
 }

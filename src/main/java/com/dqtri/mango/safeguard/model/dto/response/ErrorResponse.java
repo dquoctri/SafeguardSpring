@@ -1,20 +1,18 @@
-/*
- * Copyright (c) 2023 Mango Family
- * All rights reserved or may not! :)
- */
-
 package com.dqtri.mango.safeguard.model.dto.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
+import org.springframework.http.HttpStatus;
 
-@Getter
 @Setter
+@Getter
+@ToString
 @NoArgsConstructor
 @AllArgsConstructor
-public class TokenResponse {
-    private String refreshToken;
-    private String accessToken;
+public class ErrorResponse {
+    private HttpStatus status;
+    private String message;
 }

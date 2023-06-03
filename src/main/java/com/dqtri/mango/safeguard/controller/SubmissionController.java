@@ -10,7 +10,13 @@ import com.dqtri.mango.safeguard.model.dto.PageCriteria;
 import com.dqtri.mango.safeguard.model.dto.payload.SubmissionPayload;
 import com.dqtri.mango.safeguard.repository.SubmissionRepository;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.info.Info;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.persistence.EntityNotFoundException;
@@ -33,15 +39,20 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @SecurityRequirement(name = "access_token")
 @Tag(name = "Submission API", description = "Submissions ...")
-@OpenAPIDefinition(info = @Info(title = "Submission API", version = "v1"))
 public class SubmissionController {
 
     private final SubmissionRepository submissionRepository;
 
+    @Operation(summary = "Get All Submissions")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Submission list with paging",
+                    content = { @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = Page.class)) })
+    })
     @Transactional(readOnly = true)
     @GetMapping("/submissions")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SPECIALIST', 'SUBMITTER')")
-    public ResponseEntity<?> getSubmissions(@Valid PageCriteria pageCriteria) {
+    public ResponseEntity<Page<Submission>> getSubmissions(@Valid PageCriteria pageCriteria) {
         Pageable pageable = pageCriteria.toPageable("pk");
         Page<Submission> all = submissionRepository.findAll(pageable);
         return ResponseEntity.ok(all);

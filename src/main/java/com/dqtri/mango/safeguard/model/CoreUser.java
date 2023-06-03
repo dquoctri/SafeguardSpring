@@ -7,14 +7,17 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Table;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 
-
-@Setter
-@Getter
 @Entity
 @Table(name = "core_user")
+@Setter
+@Getter
+@Data
+@EqualsAndHashCode(callSuper = true, exclude = "password")
 public class CoreUser extends BaseEntity {
 
     @Column(name = "email", length = 320, nullable = false, unique = true)
@@ -28,3 +31,5 @@ public class CoreUser extends BaseEntity {
     @Column(name = "password", length = 60, nullable = false)
     private String password;
 }
+
+

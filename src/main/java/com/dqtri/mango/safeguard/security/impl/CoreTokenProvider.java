@@ -51,7 +51,7 @@ public class CoreTokenProvider implements TokenProvider {
                 .setIssuer(issuer)
                 .signWith(SignatureAlgorithm.RS256, getPrivateKey())
                 .compact();
-        return new TokenResponse(accessToken);
+        return new TokenResponse(accessToken, accessToken);
     }
 
     private PrivateKey getPrivateKey() throws NoSuchAlgorithmException, InvalidKeySpecException {

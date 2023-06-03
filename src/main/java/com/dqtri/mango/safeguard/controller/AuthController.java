@@ -13,6 +13,13 @@ import com.dqtri.mango.safeguard.model.dto.response.TokenResponse;
 import com.dqtri.mango.safeguard.model.enums.Role;
 import com.dqtri.mango.safeguard.repository.UserRepository;
 import com.dqtri.mango.safeguard.security.TokenProvider;
+import io.swagger.v3.oas.annotations.Hidden;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -27,10 +34,13 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@RequiredArgsConstructor
 @RestController
+@RequestMapping("/auth")
+@RequiredArgsConstructor
+@Tag(name = "Authentication API", description = "Responsible for handling user authentication-related operations")
 public class AuthController {
 
     private final PasswordEncoder passwordEncoder;
@@ -38,8 +48,32 @@ public class AuthController {
     private final TokenProvider tokenProvider;
     private final UserRepository userRepository;
 
-    @PostMapping(value = "/login", consumes = {MediaType.APPLICATION_JSON_VALUE})
-    public ResponseEntity<?> login(@RequestBody @Valid LoginPayload login) throws Exception {
+    @Operation(summary = "Register by providing necessary registration details")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Registered user details",
+                    content = { @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = CoreUser.class)) }),
+            @ApiResponse(responseCode = "400", description = "The provided email or password format is invalid"),
+    })
+    @PostMapping(value = "/register")
+    @Transactional
+    public ResponseEntity<CoreUser> register(@RequestBody @Valid RegisterPayload register) {
+        checkConflictUserEmail(register.getEmail());
+        CoreUser coreUser = createCoreUser(register);
+        CoreUser saved = userRepository.save(coreUser);
+        return ResponseEntity.ok(saved);
+    }
+
+    @Operation(summary = "Login by providing email & password credentials")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Generate a refresh token",
+                    content = { @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = TokenResponse.class)) }),
+            @ApiResponse(responseCode = "400", description = "The provided email or password format is invalid"),
+            @ApiResponse(responseCode = "401", description = "Invalid email or password credentials"),
+    })
+    @PostMapping(value = "/login", consumes = {MediaType.APPLICATION_JSON_VALUE}, produces = {MediaType.APPLICATION_JSON_VALUE})
+    public ResponseEntity<TokenResponse> login(@RequestBody @Valid LoginPayload login) throws Exception {
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(login.getEmail(), login.getPassword())
         );
@@ -48,13 +82,13 @@ public class AuthController {
         return ResponseEntity.ok(tokenResponse);
     }
 
-    @PostMapping(value = "/register")
-    @Transactional
-    public ResponseEntity<?> register(@RequestBody @Valid RegisterPayload register) {
-        checkConflictUserEmail(register.getEmail());
-        CoreUser coreUser = createCoreUser(register);
-        CoreUser saved = userRepository.save(coreUser);
-        return ResponseEntity.ok(saved);
+    public ResponseEntity<TokenResponse> refresh(@RequestBody @Valid LoginPayload login) throws Exception {
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(login.getEmail(), login.getPassword())
+        );
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+        TokenResponse tokenResponse = tokenProvider.generateToken(authentication);
+        return ResponseEntity.ok(tokenResponse);
     }
 
     private void checkConflictUserEmail(String email) {
@@ -71,19 +105,22 @@ public class AuthController {
         return user;
     }
 
+    @Hidden
     @PostMapping("forgot-password")
-    public ResponseEntity<?> forgotPassword() {
+    public ResponseEntity<String> forgotPassword() {
         return ResponseEntity.ok("forgot_password");
     }
 
+    @Hidden
     @PostMapping("reset-password")
-    public ResponseEntity<?> resetPassword() {
+    public ResponseEntity<String> resetPassword() {
         return ResponseEntity.ok("reset_password");
     }
 
+    @Hidden
     @PostMapping("change-password")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<?> changePassword() {
+    public ResponseEntity<String> changePassword() {
 
         return ResponseEntity.ok("change_password");
     }

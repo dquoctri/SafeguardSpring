@@ -1,13 +1,16 @@
 package com.dqtri.mango.safeguard;
 
+import com.dqtri.mango.safeguard.security.impl.CoreTokenResolver;
+import io.jsonwebtoken.lang.Assert;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest
-class SafeguardSpringApplicationTests {
+@SpringBootTest(classes = {SafeguardSpringApplication.class})
+public class SafeguardSpringApplicationTests {
 
 	@Test
-	void contextLoads() {
+	public void contextLoads() {
+		Assert.isTrue(true);
 	}
 
 }

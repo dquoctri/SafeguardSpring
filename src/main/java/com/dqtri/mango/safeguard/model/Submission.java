@@ -25,10 +25,10 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.util.Date;
 
+@Entity
+@EntityListeners(AuditingEntityListener.class)
 @Setter
 @Getter
-@EntityListeners(AuditingEntityListener.class)
-@Entity
 public class Submission extends BaseEntity {
 
     @Column(name = "subject", length = 255)
