@@ -1,5 +1,7 @@
-package com.dqtri.mango.safeguard.security;
+package com.dqtri.mango.safeguard.security.access;
 
+import com.dqtri.mango.safeguard.security.AppUserDetails;
+import com.dqtri.mango.safeguard.security.TokenResolver;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
@@ -15,8 +17,8 @@ import org.springframework.security.core.Authentication;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-@SpringBootTest(classes = {CoreAuthenticationFilterTest.class})
-public class CoreAuthenticationProviderTest {
+@SpringBootTest(classes = {AccessAuthenticationFilterTest.class})
+public class AccessAuthenticationProviderTest {
 
     @Mock
     TokenResolver tokenResolver;
@@ -26,29 +28,29 @@ public class CoreAuthenticationProviderTest {
 
     @BeforeEach
     public void setup(){
-        authenticationProvider = new CoreAuthenticationProvider(tokenResolver);
+        authenticationProvider = new AccessAuthenticationProvider(tokenResolver);
     }
 
     @Test
     public void authenticate_givenToken_thenSuccess() {
-        CoreAuthenticationToken customAuthenticationToken = new CoreAuthenticationToken("Bearer header.payload.signature");
+        AccessAuthenticationToken customAuthenticationToken = new AccessAuthenticationToken("Bearer header.payload.signature");
         Authentication authenticate = authenticationProvider.authenticate(customAuthenticationToken);
 
         //test
         assertThat(authenticate).isNotNull();
-        assertThat(authenticate).isInstanceOf(CoreAuthenticationToken.class);
+        assertThat(authenticate).isInstanceOf(AccessAuthenticationToken.class);
         assertThat(authenticate.isAuthenticated()).isTrue();
         assertThat(authenticate.getPrincipal()).isNotNull();
-        assertThat(authenticate.getPrincipal()).isInstanceOf(CoreUserDetails.class);
-        CoreUserDetails principal = (CoreUserDetails) authenticate.getPrincipal();
+        assertThat(authenticate.getPrincipal()).isInstanceOf(AppUserDetails.class);
+        AppUserDetails principal = (AppUserDetails) authenticate.getPrincipal();
         assertThat(principal.getUsername()).isEqualTo("submitter@mango.dqtri.com");
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"Bearer abc", "Bearer test-failed"})
     public void authenticate_givenInvalidToken_thenNull(String accessToken) {
-        CoreAuthenticationToken coreAuthenticationToken = new CoreAuthenticationToken(accessToken);
-        Authentication authenticate = authenticationProvider.authenticate(coreAuthenticationToken);
+        AccessAuthenticationToken accessAuthenticationToken = new AccessAuthenticationToken(accessToken);
+        Authentication authenticate = authenticationProvider.authenticate(accessAuthenticationToken);
         //test
         assertThat(authenticate).isNull();
     }
@@ -67,8 +69,8 @@ public class CoreAuthenticationProviderTest {
 
     @Test
     public void authenticate_givenNullToken_thenException() {
-        CoreAuthenticationToken coreAuthenticationToken = new CoreAuthenticationToken(null);
-        Executable executable = () -> authenticationProvider.authenticate(coreAuthenticationToken);
+        AccessAuthenticationToken accessAuthenticationToken = new AccessAuthenticationToken((String)null);
+        Executable executable = () -> authenticationProvider.authenticate(accessAuthenticationToken);
         //test
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
@@ -93,7 +95,7 @@ public class CoreAuthenticationProviderTest {
 
     @Test
     public void support_givenCustomToken_thenTrue() {
-        boolean supports = authenticationProvider.supports(CoreAuthenticationToken.class);
+        boolean supports = authenticationProvider.supports(AccessAuthenticationToken.class);
         assertThat(supports).isTrue();
     }
 

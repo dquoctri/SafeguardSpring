@@ -1,7 +1,7 @@
-package com.dqtri.mango.safeguard.security.impl;
+package com.dqtri.mango.safeguard.security.access;
 
-import com.dqtri.mango.safeguard.security.CoreAuthenticationToken;
-import com.dqtri.mango.safeguard.security.CoreUserDetails;
+import com.dqtri.mango.safeguard.security.AppUserDetails;
+import com.dqtri.mango.safeguard.security.BasicUserDetails;
 import com.dqtri.mango.safeguard.security.TokenResolver;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -12,6 +12,7 @@ import io.jsonwebtoken.SignatureException;
 import io.jsonwebtoken.UnsupportedJwtException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -28,37 +29,33 @@ import java.util.Base64;
 @Slf4j
 @RequiredArgsConstructor
 @Component
-public class CoreTokenResolver implements TokenResolver {
+@Qualifier("accessTokenResolver")
+public class AccessTokenResolver implements TokenResolver {
 
     private final UserDetailsService userDetailsService;
-
-    @Value("${safeguard.auth.publicKey}")
-    private String publicKey;
+    @Value("${safeguard.auth.access.publicKey}")
+    private String accessPublicKey;
 
     @Override
     public Authentication verifyToken(String accessToken) {
-        Jws<Claims> claimsJws = validateToken(accessToken);
+        Jws<Claims> claimsJws = validateAccessToken(accessToken);
+        if (claimsJws == null) return null;
         Claims body = claimsJws.getBody();
-        claimsJws.getHeader();
-        claimsJws.getSignature();
-        Object authorities = body.get("authorities");
         String subject = body.getSubject();
-        UserDetails userDetails = userDetailsService.loadUserByUsername(subject);
-        if (userDetails instanceof CoreUserDetails coreUser) {
-
-        }
-        return new CoreAuthenticationToken(userDetails, userDetails.getAuthorities());
+        BasicUserDetails userDetails = (BasicUserDetails) userDetailsService.loadUserByUsername(subject);
+        AppUserDetails appUserDetails = AppUserDetails.create(userDetails.getCoreUser());
+        return new AccessAuthenticationToken(appUserDetails);
     }
 
-    private PublicKey getPublicKey() throws NoSuchAlgorithmException, InvalidKeySpecException {
+    private PublicKey getAccessPublicKey() throws NoSuchAlgorithmException, InvalidKeySpecException {
         KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-        X509EncodedKeySpec KeySpec = new X509EncodedKeySpec(Base64.getDecoder().decode(this.publicKey));
-        return keyFactory.generatePublic(KeySpec);
+        X509EncodedKeySpec keySpec = new X509EncodedKeySpec(Base64.getDecoder().decode(this.accessPublicKey));
+        return keyFactory.generatePublic(keySpec);
     }
 
-    public Jws<Claims> validateToken(String accessToken) {
+    public Jws<Claims> validateAccessToken(String accessToken) {
         try {
-            PublicKey publicKey = getPublicKey();
+            PublicKey publicKey = getAccessPublicKey();
             return Jwts.parser().setSigningKey(publicKey).parseClaimsJws(accessToken);
         } catch (SignatureException ex) {
             log.error("Invalid JWT signature", ex);
@@ -69,11 +66,11 @@ public class CoreTokenResolver implements TokenResolver {
         } catch (UnsupportedJwtException ex) {
             log.error("Unsupported JWT token", ex);
         } catch (IllegalArgumentException ex) {
-            log.error("JWT claims string is empty.", ex);
-        } catch (NoSuchAlgorithmException e) {
-            log.error("No such algorithm", e);
-        } catch (InvalidKeySpecException e) {
-            log.error("invalid key spec", e);
+            log.error("JWT claims string is empty", ex);
+        } catch (NoSuchAlgorithmException ex) {
+            log.error("The JWT does not reflect this algorithm", ex);
+        } catch (InvalidKeySpecException ex) {
+            log.error("Invalid public key spec", ex);
         }
         return null;
     }

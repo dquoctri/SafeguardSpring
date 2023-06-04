@@ -1,9 +1,11 @@
 package com.dqtri.mango.safeguard.config;
 
-import com.dqtri.mango.safeguard.security.CoreAuthenticationFilter;
-import com.dqtri.mango.safeguard.security.CoreUnauthorizedEntryPoint;
+import com.dqtri.mango.safeguard.security.access.AccessAuthenticationFilter;
+import com.dqtri.mango.safeguard.security.CustomUnauthorizedEntryPoint;
+import com.dqtri.mango.safeguard.security.refresh.RefreshAuthenticationFilter;
 import jakarta.servlet.Filter;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -22,7 +24,6 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.access.AccessDeniedHandlerImpl;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -34,8 +35,18 @@ import java.util.List;
 @EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
-    private final AuthenticationProvider authenticationProvider;
+
+    private final AuthenticationProvider refreshAuthenticationProvider;
+    private final AuthenticationProvider accessAuthenticationProvider;
     private final UserDetailsService userDetailsService;
+
+//    public SecurityConfig(@Qualifier("refreshAuthenticationProvider") AuthenticationProvider refreshAuthenticationProvider,
+//                          @Qualifier("accessAuthenticationProvider") AuthenticationProvider accessAuthenticationProvider,
+//                          UserDetailsService userDetailsService){
+//        this.refreshAuthenticationProvider = refreshAuthenticationProvider;
+//        this.accessAuthenticationProvider = accessAuthenticationProvider;
+//        this.userDetailsService = userDetailsService;
+//    }
 
     @Bean
     public SecurityFilterChain authorizeFilterChain(HttpSecurity http) throws Exception {
@@ -62,8 +73,8 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 //https://docs.spring.io/spring-security/site/docs/4.2.1.RELEASE/reference/htmlsingle/#filter-ordering
-                .addFilterBefore(authenticationFilter(http), UsernamePasswordAuthenticationFilter.class)
-//                .addFilterAfter(authenticationFilter(http), UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(refreshAuthenticationFilter(http), UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(accessAuthenticationFilter(http), RefreshAuthenticationFilter.class)
                 .exceptionHandling(exceptionHandling -> exceptionHandling
                         .authenticationEntryPoint(unauthorizedHandler())
                         .accessDeniedHandler(accessDeniedHandler())
@@ -94,19 +105,27 @@ public class SecurityConfig {
     public AuthenticationManager authenticationManager(HttpSecurity http) throws Exception {
         AuthenticationManagerBuilder builder = http.getSharedObject(AuthenticationManagerBuilder.class);
         builder.userDetailsService(userDetailsService).passwordEncoder(passwordEncoder());
-        builder.authenticationProvider(authenticationProvider);
+//        builder.authenticationProvider(accessAuthenticationProvider);
+//        builder.authenticationProvider(refreshAuthenticationProvider);
         return builder.build();
     }
 
     @Bean
-    public Filter authenticationFilter(HttpSecurity http) throws Exception {
+    public Filter accessAuthenticationFilter(HttpSecurity http) throws Exception {
         AuthenticationManagerBuilder builder = http.getSharedObject(AuthenticationManagerBuilder.class);
-        return new CoreAuthenticationFilter(builder.build());
+        builder.authenticationProvider(accessAuthenticationProvider);
+        return new AccessAuthenticationFilter(builder.build());
+    }
+    @Bean
+    public Filter refreshAuthenticationFilter(HttpSecurity http) throws Exception {
+        AuthenticationManagerBuilder builder = http.getSharedObject(AuthenticationManagerBuilder.class);
+        builder.authenticationProvider(refreshAuthenticationProvider);
+        return new RefreshAuthenticationFilter(builder.build());
     }
 
     @Bean
     public AuthenticationEntryPoint unauthorizedHandler() {
-        return new CoreUnauthorizedEntryPoint();
+        return new CustomUnauthorizedEntryPoint();
     }
 
     @Bean

@@ -9,16 +9,20 @@ import com.dqtri.mango.safeguard.exception.ConflictException;
 import com.dqtri.mango.safeguard.model.CoreUser;
 import com.dqtri.mango.safeguard.model.dto.payload.LoginPayload;
 import com.dqtri.mango.safeguard.model.dto.payload.RegisterPayload;
-import com.dqtri.mango.safeguard.model.dto.response.TokenResponse;
+import com.dqtri.mango.safeguard.model.dto.response.AuthenticationResponse;
+import com.dqtri.mango.safeguard.model.dto.response.RefreshResponse;
 import com.dqtri.mango.safeguard.model.enums.Role;
 import com.dqtri.mango.safeguard.repository.UserRepository;
+import com.dqtri.mango.safeguard.security.BasicUserDetails;
 import com.dqtri.mango.safeguard.security.TokenProvider;
+import com.dqtri.mango.safeguard.security.UserPrincipal;
 import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
@@ -30,12 +34,17 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
 
 @RestController
 @RequestMapping("/auth")
@@ -45,7 +54,10 @@ public class AuthController {
 
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
-    private final TokenProvider tokenProvider;
+
+    private final TokenProvider refreshTokenProvider;
+
+    private final TokenProvider accessTokenProvider;
     private final UserRepository userRepository;
 
     @Operation(summary = "Register by providing necessary registration details")
@@ -68,27 +80,29 @@ public class AuthController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Generate a refresh token",
                     content = { @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = TokenResponse.class)) }),
+                            schema = @Schema(implementation = AuthenticationResponse.class)) }),
             @ApiResponse(responseCode = "400", description = "The provided email or password format is invalid"),
             @ApiResponse(responseCode = "401", description = "Invalid email or password credentials"),
     })
-    @PostMapping(value = "/login", consumes = {MediaType.APPLICATION_JSON_VALUE}, produces = {MediaType.APPLICATION_JSON_VALUE})
-    public ResponseEntity<TokenResponse> login(@RequestBody @Valid LoginPayload login) throws Exception {
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(login.getEmail(), login.getPassword())
-        );
+    @PostMapping(value = "/login",
+            consumes = {MediaType.APPLICATION_JSON_VALUE},
+            produces = {MediaType.APPLICATION_JSON_VALUE})
+    public ResponseEntity<AuthenticationResponse> login(@RequestBody @Valid LoginPayload login) {
+        var authenticationToken = new UsernamePasswordAuthenticationToken(login.getEmail(), login.getPassword());
+        Authentication authentication = authenticationManager.authenticate(authenticationToken);
+
         SecurityContextHolder.getContext().setAuthentication(authentication);
-        TokenResponse tokenResponse = tokenProvider.generateToken(authentication);
-        return ResponseEntity.ok(tokenResponse);
+        String refreshToken = refreshTokenProvider.generateToken(authentication);
+        String accessToken = accessTokenProvider.generateToken(authentication);
+        return ResponseEntity.ok(new AuthenticationResponse(refreshToken, accessToken));
     }
 
-    public ResponseEntity<TokenResponse> refresh(@RequestBody @Valid LoginPayload login) throws Exception {
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(login.getEmail(), login.getPassword())
-        );
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-        TokenResponse tokenResponse = tokenProvider.generateToken(authentication);
-        return ResponseEntity.ok(tokenResponse);
+    @SecurityRequirement(name = "refresh_token")
+    @GetMapping(value = "/refresh", produces = {MediaType.APPLICATION_JSON_VALUE})
+    public ResponseEntity<RefreshResponse> refresh() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String accessToken = accessTokenProvider.generateToken(authentication);
+        return ResponseEntity.ok(new RefreshResponse(accessToken));
     }
 
     private void checkConflictUserEmail(String email) {

@@ -1,4 +1,4 @@
-package com.dqtri.mango.safeguard.security.impl;
+package com.dqtri.mango.safeguard.security;
 
 import java.security.KeyFactory;
 import java.security.KeyPair;

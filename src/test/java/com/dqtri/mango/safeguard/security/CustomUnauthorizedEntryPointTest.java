@@ -13,15 +13,15 @@ import java.io.IOException;
 
 import static org.mockito.Mockito.verify;
 
-@SpringBootTest(classes = {CoreUnauthorizedEntryPoint.class})
-public class CoreUnauthorizedEntryPointTest {
+@SpringBootTest(classes = {CustomUnauthorizedEntryPoint.class})
+public class CustomUnauthorizedEntryPointTest {
 
     @Mock
     private HttpServletRequest request;
     @Mock
     private HttpServletResponse response;
 
-    private AuthenticationEntryPoint authenticationEntryPoint = new CoreUnauthorizedEntryPoint();
+    private AuthenticationEntryPoint authenticationEntryPoint = new CustomUnauthorizedEntryPoint();
 
     @Test
     void commence() throws IOException, ServletException {

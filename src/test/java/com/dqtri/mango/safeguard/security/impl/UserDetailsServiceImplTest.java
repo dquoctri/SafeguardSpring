@@ -7,7 +7,8 @@ package com.dqtri.mango.safeguard.security.impl;
 
 import com.dqtri.mango.safeguard.model.enums.Role;
 import com.dqtri.mango.safeguard.repository.UserRepository;
-import com.dqtri.mango.safeguard.security.CoreUserDetails;
+import com.dqtri.mango.safeguard.security.AppUserDetails;
+import com.dqtri.mango.safeguard.security.UserDetailsServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
@@ -20,7 +21,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-@SpringBootTest(classes = {CoreUserDetailsServiceImpl.class})
+@SpringBootTest(classes = {UserDetailsServiceImpl.class})
 public class UserDetailsServiceImplTest {
 
     @Mock
@@ -30,17 +31,17 @@ public class UserDetailsServiceImplTest {
 
     @BeforeEach
     public void setup(){
-        userDetailsService = new CoreUserDetailsServiceImpl(userRepository);
+        userDetailsService = new UserDetailsServiceImpl(userRepository);
     }
 
     @Test
     public void loadUserByUsername_givenExistUsername_returnsConfigUser() {
         UserDetails userDetails = userDetailsService.loadUserByUsername("submitter@mango.dqtri.com");
         assertThat(userDetails).isNotNull();
-        assertThat(userDetails).isInstanceOf(CoreUserDetails.class);
-        CoreUserDetails coreUserDetails = (CoreUserDetails)userDetails;
-        assertThat(coreUserDetails.getCoreUser()).isNotNull();
-        assertThat(coreUserDetails.getCoreUser().getRole()).isEqualTo(Role.SUBMITTER);
+        assertThat(userDetails).isInstanceOf(AppUserDetails.class);
+        AppUserDetails appUserDetails = (AppUserDetails)userDetails;
+        assertThat(appUserDetails.getCoreUser()).isNotNull();
+        assertThat(appUserDetails.getCoreUser().getRole()).isEqualTo(Role.SUBMITTER);
     }
 
     @Test

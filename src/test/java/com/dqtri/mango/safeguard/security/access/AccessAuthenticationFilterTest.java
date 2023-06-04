@@ -1,7 +1,10 @@
-package com.dqtri.mango.safeguard.security;
+package com.dqtri.mango.safeguard.security.access;
 
 import com.dqtri.mango.safeguard.model.CoreUser;
 import com.dqtri.mango.safeguard.model.enums.Role;
+import com.dqtri.mango.safeguard.security.AppUserDetails;
+import com.dqtri.mango.safeguard.security.access.AccessAuthenticationFilter;
+import com.dqtri.mango.safeguard.security.access.AccessAuthenticationToken;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -32,10 +35,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-@SpringBootTest(classes = {CoreAuthenticationFilter.class})
+@SpringBootTest(classes = {AccessAuthenticationFilter.class})
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-public class CoreAuthenticationFilterTest {
+class AccessAuthenticationFilterTest {
 
     @MockBean
     private AuthenticationManager authenticationManager;
@@ -50,17 +53,17 @@ public class CoreAuthenticationFilterTest {
     private FilterChain filterChain;
 
     @Captor
-    private ArgumentCaptor<CoreAuthenticationToken> tokenArgumentCaptor;
+    private ArgumentCaptor<AccessAuthenticationToken> tokenArgumentCaptor;
 
-    private CoreAuthenticationFilter authenticationFilter;
+    private AccessAuthenticationFilter authenticationFilter;
 
     @BeforeEach
     public void setup() {
-        authenticationFilter = new CoreAuthenticationFilter(authenticationManager);
+        authenticationFilter = new AccessAuthenticationFilter(authenticationManager);
     }
 
     @Test
-    public void doFilterInternal_givenNullToken_thenNoAuthentication() throws ServletException, IOException {
+    void doFilterInternal_givenNullToken_thenNoAuthentication() throws ServletException, IOException {
         //given
         when(httpServletRequest.getHeader("Authorization")).thenReturn(null);
         //when
@@ -72,7 +75,7 @@ public class CoreAuthenticationFilterTest {
 
     @ParameterizedTest
     @ValueSource(strings = {"", "NotBearer", "Basic token"})
-    public void doFilterInternal_givenNoBearerToken_thenNoAuthentication(String token) throws ServletException, IOException {
+     void doFilterInternal_givenNoBearerToken_thenNoAuthentication(String token) throws ServletException, IOException {
         //given
         when(httpServletRequest.getHeader("Authorization")).thenReturn(token);
         //when
@@ -83,7 +86,7 @@ public class CoreAuthenticationFilterTest {
     }
 
     @Test
-    public void doFilterInternal_givenInvalidBearerToken_() throws ServletException, IOException {
+     void doFilterInternal_givenInvalidBearerToken_() throws ServletException, IOException {
         //given
         when(httpServletRequest.getHeader("Authorization")).thenReturn("Bearer token");
         //when
@@ -92,7 +95,7 @@ public class CoreAuthenticationFilterTest {
         //then
         verify(authenticationManager).authenticate(tokenArgumentCaptor.capture());
         verify(filterChain).doFilter(httpServletRequest, httpServletResponse);
-        CoreAuthenticationToken token = tokenArgumentCaptor.getValue();
+        AccessAuthenticationToken token = tokenArgumentCaptor.getValue();
         assertEquals("Bearer token", token.getPrincipal());
     }
 
@@ -104,16 +107,16 @@ public class CoreAuthenticationFilterTest {
         coreUser.setPassword("core@email");
         coreUser.setRole(Role.SUBMITTER);
 
-        CoreUserDetails userDetails = new CoreUserDetails(coreUser);
-        Authentication authentication = new CoreAuthenticationToken(userDetails, userDetails.getAuthorities());
-        CoreAuthenticationToken jwtAuthenticationToken = new CoreAuthenticationToken("Bearer token");
+        AppUserDetails userDetails = new AppUserDetails(coreUser);
+        Authentication authentication = new AccessAuthenticationToken(userDetails);
+        AccessAuthenticationToken jwtAuthenticationToken = new AccessAuthenticationToken("Bearer token");
         when(httpServletRequest.getHeader("Authorization")).thenReturn("Bearer token");
         when(authenticationManager.authenticate(jwtAuthenticationToken)).thenReturn(authentication);
         //when
         authenticationFilter.doFilterInternal(httpServletRequest, httpServletResponse, filterChain);
         //then
         verify(authenticationManager).authenticate(tokenArgumentCaptor.capture());
-        CoreAuthenticationToken token = tokenArgumentCaptor.getValue();
+        AccessAuthenticationToken token = tokenArgumentCaptor.getValue();
         assertEquals("Bearer token", token.getPrincipal());
     }
 
@@ -121,11 +124,12 @@ public class CoreAuthenticationFilterTest {
     void doFilterInternal_mockThrowException() throws ServletException, IOException {
         //given
         when(httpServletRequest.getHeader("Authorization")).thenReturn("Bearer token");
-        CoreAuthenticationToken jwtAuthenticationToken = new CoreAuthenticationToken("Bearer token");
+        AccessAuthenticationToken jwtAuthenticationToken = new AccessAuthenticationToken("Bearer token");
         when(authenticationManager.authenticate(jwtAuthenticationToken))
                 .thenThrow(Mockito.mock(AuthenticationException.class));
         //when
         authenticationFilter.doFilterInternal(httpServletRequest, httpServletResponse, filterChain);
         //then
+        //TODO:
     }
 }

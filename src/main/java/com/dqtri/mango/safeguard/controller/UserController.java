@@ -8,11 +8,9 @@ import com.dqtri.mango.safeguard.model.dto.payload.UserCreatingPayload;
 import com.dqtri.mango.safeguard.model.dto.payload.UserUpdatingPayload;
 import com.dqtri.mango.safeguard.model.enums.Role;
 import com.dqtri.mango.safeguard.repository.UserRepository;
-import com.dqtri.mango.safeguard.security.CoreUserDetails;
+import com.dqtri.mango.safeguard.security.AppUserDetails;
 import com.dqtri.mango.safeguard.security.UserPrincipal;
-import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -70,7 +68,7 @@ public class UserController {
 
     @GetMapping("/users/me")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<?> getMyProfiles(@UserPrincipal CoreUserDetails currentUser) {
+    public ResponseEntity<?> getMyProfiles(@UserPrincipal AppUserDetails currentUser) {
         CoreUser coreUser = currentUser.getCoreUser();
         return ResponseEntity.ok(coreUser);
     }

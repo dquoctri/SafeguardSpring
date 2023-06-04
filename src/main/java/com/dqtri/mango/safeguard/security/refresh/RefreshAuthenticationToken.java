@@ -1,30 +1,23 @@
-/*
- * Copyright (c) 2023 Mango Family
- * All rights reserved or may not! :)
- */
-
-package com.dqtri.mango.safeguard.security;
+package com.dqtri.mango.safeguard.security.refresh;
 
 import org.springframework.security.authentication.AbstractAuthenticationToken;
-import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
-import java.util.Collection;
 import java.util.Objects;
 
-public class CoreAuthenticationToken extends AbstractAuthenticationToken {
+public class RefreshAuthenticationToken extends AbstractAuthenticationToken {
     private final Object principal;
 
-    public CoreAuthenticationToken(Object principal, Collection<? extends GrantedAuthority> authorities) {
-        super(authorities);
+    public RefreshAuthenticationToken(String token) {
+        super(null);
+        this.principal = token;
+    }
+
+    public RefreshAuthenticationToken(UserDetails principal) {
+        super(principal.getAuthorities());
         this.principal = principal;
         super.setAuthenticated(true);
     }
-
-    public CoreAuthenticationToken(Object principal) {
-        super(null);
-        this.principal = principal;
-    }
-
 
     @Override
     public Object getCredentials() {
@@ -42,7 +35,7 @@ public class CoreAuthenticationToken extends AbstractAuthenticationToken {
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
 
-        CoreAuthenticationToken that = (CoreAuthenticationToken) o;
+        RefreshAuthenticationToken that = (RefreshAuthenticationToken) o;
 
         return Objects.equals(principal, that.principal);
     }

@@ -1,35 +1,30 @@
-/*
- * Copyright (c) 2023 Mango Family
- * All rights reserved or may not! :)
- */
+package com.dqtri.mango.safeguard.security.refresh;
 
-package com.dqtri.mango.safeguard.security;
-
+import com.dqtri.mango.safeguard.security.TokenResolver;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Primary;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
-@Slf4j
-@Primary
-@RequiredArgsConstructor
+import static com.dqtri.mango.safeguard.util.Constant.BEARER;
+
 @Component
-public class CoreAuthenticationProvider implements AuthenticationProvider {
-
-    private static final String BEARER = "Bearer ";
-
-    private final TokenResolver tokenResolver;
+@Slf4j
+@RequiredArgsConstructor
+@Qualifier("refreshAuthenticationProvider")
+public class RefreshAuthenticationProvider implements AuthenticationProvider {
+    private final TokenResolver refreshTokenResolver;
 
     @Override
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
         try {
             validate(authentication);
             String accessToken = authentication.getName().substring(BEARER.length());
-            return tokenResolver.verifyToken(accessToken);
+            return refreshTokenResolver.verifyToken(accessToken);
         } catch (Exception e) {
             log.error("Authentication failed", e);
         }
@@ -38,13 +33,13 @@ public class CoreAuthenticationProvider implements AuthenticationProvider {
 
     @Override
     public boolean supports(Class<?> authentication) {
-        return CoreAuthenticationToken.class.isAssignableFrom(authentication);
+        return RefreshAuthenticationToken.class.isAssignableFrom(authentication);
     }
 
     private void validate(Authentication authentication) {
         Assert.notNull(authentication, "Authentication is missing");
         Assert.notNull(authentication.getPrincipal(), "Authentication principal is missing");
-        Assert.isInstanceOf(CoreAuthenticationToken.class, authentication, "Only Accepts Core Token");
+        Assert.isInstanceOf(RefreshAuthenticationToken.class, authentication, "Only Accepts Core Token");
         Assert.isTrue(authentication.getName().startsWith(BEARER), "Only Accepts Bearer Token");
     }
 }

@@ -18,18 +18,18 @@ import java.util.List;
 
 @Setter
 @Getter
-public class CoreUserDetails extends User implements UserDetails {
+public class AppUserDetails extends User implements UserDetails {
 
     @NotNull
     private CoreUser coreUser;
 
-    public CoreUserDetails(@NotNull CoreUser user) {
+    public AppUserDetails(@NotNull CoreUser user) {
         super(user.getEmail(), user.getPassword(), createAuthoritiesWithRole(user.getRole()));
         this.coreUser = user;
     }
 
-    public static CoreUserDetails create(@NotNull CoreUser user) {
-        return new CoreUserDetails(user);
+    public static AppUserDetails create(@NotNull CoreUser user) {
+        return new AppUserDetails(user);
     }
 
     private static List<SimpleGrantedAuthority> createAuthoritiesWithRole(@NotNull Role role) {

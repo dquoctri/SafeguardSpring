@@ -5,10 +5,10 @@
 
 package com.dqtri.mango.safeguard.security;
 
-import com.dqtri.mango.safeguard.security.impl.CoreTokenResolver;
+import com.dqtri.mango.safeguard.security.access.AccessTokenResolver;
 import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest(classes = {CoreTokenResolver.class})
+@SpringBootTest(classes = {AccessTokenResolver.class})
 public class TokenResolverTest {
     //TODO:
 }

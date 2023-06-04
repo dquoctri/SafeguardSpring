@@ -10,7 +10,7 @@ import com.dqtri.mango.safeguard.model.CoreUser;
 import com.dqtri.mango.safeguard.model.dto.payload.LoginPayload;
 import com.dqtri.mango.safeguard.model.dto.payload.RegisterPayload;
 import com.dqtri.mango.safeguard.model.dto.response.ErrorResponse;
-import com.dqtri.mango.safeguard.model.dto.response.TokenResponse;
+import com.dqtri.mango.safeguard.model.dto.response.AuthenticationResponse;
 import com.dqtri.mango.safeguard.model.enums.Role;
 import com.dqtri.mango.safeguard.repository.UserRepository;
 import com.dqtri.mango.safeguard.security.TokenProvider;
@@ -175,13 +175,13 @@ public class AuthControllerIntegrationTest extends AbstractIntegrationTest {
             LoginPayload loginPayload = createLoginPayload();
             var authentication = new UsernamePasswordAuthenticationToken(loginPayload.getEmail(), loginPayload.getPassword());
             when(authenticationManager.authenticate(any())).thenReturn(authentication);
-            when(tokenProvider.generateToken(any())).thenReturn(new TokenResponse("refresh_token_value", "access_token_value"));
+            when(tokenProvider.generateToken(any())).thenReturn(new AuthenticationResponse("refresh_token_value", "access_token_value"));
             //then
-            TokenResponse tokenResponse = assertOk(loginPayload);
+            AuthenticationResponse authenticationResponse = assertOk(loginPayload);
             //test
-            assertThat(tokenResponse).isNotNull();
-            assertThat(tokenResponse.getRefreshToken()).isEqualTo("refresh_token_value");
-            assertThat(tokenResponse.getAccessToken()).isEqualTo("access_token_value");
+            assertThat(authenticationResponse).isNotNull();
+            assertThat(authenticationResponse.getRefreshToken()).isEqualTo("refresh_token_value");
+            assertThat(authenticationResponse.getAccessToken()).isEqualTo("access_token_value");
         }
 
         @Test
@@ -241,14 +241,14 @@ public class AuthControllerIntegrationTest extends AbstractIntegrationTest {
             return loginPayload;
         }
 
-        private TokenResponse assertOk(LoginPayload registerPayload) throws Exception {
+        private AuthenticationResponse assertOk(LoginPayload registerPayload) throws Exception {
             MvcResult mvcResult = mvc.perform(post(LOGIN_ROUTE)
                             .contentType(MediaType.APPLICATION_JSON_VALUE)
                             .content(createPayloadJson(registerPayload)))
                     .andExpect(status().isOk())
                     .andReturn();
             String json = mvcResult.getResponse().getContentAsString();
-            return new ObjectMapper().readValue(json, TokenResponse.class);
+            return new ObjectMapper().readValue(json, AuthenticationResponse.class);
         }
 
         private void assertBadRequest(LoginPayload registerPayload) throws Exception {
