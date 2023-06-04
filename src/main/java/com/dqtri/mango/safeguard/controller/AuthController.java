@@ -110,8 +110,7 @@ public class AuthController {
     })
     @SecurityRequirement(name = "refresh_token")
     @GetMapping(value = "/refresh", produces = {MediaType.APPLICATION_JSON_VALUE})
-    @PreAuthorize("hasRole('REFRESH')")
-//    @PreAuthorize("hasAuthority('REFRESH') or hasRole('REFRESH')")
+    @PreAuthorize("hasAuthority('REFRESH') or hasRole('REFRESH')")
     public ResponseEntity<RefreshResponse> refresh() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String accessToken = accessTokenProvider.generateToken(authentication);

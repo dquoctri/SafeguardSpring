@@ -5,6 +5,7 @@
 
 package com.dqtri.mango.safeguard.model.dto.payload;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -15,9 +16,11 @@ import org.hibernate.validator.constraints.Length;
 @Setter
 @Getter
 public class LoginPayload {
-    @NotNull
+
     @Email
-    private String email = "mango@dqtri.com";
+    @NotNull
+    @Schema(example = "mango@dqtri.com")
+    private String email;
 
     @NotBlank
     @Length(min = 5, max = 24)

@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
@@ -56,6 +57,6 @@ public abstract class AbstractIntegrationTest {
     }
 
     protected RequestPostProcessor mockUser(@NotNull String email, @NotNull Role role){
-        return user(email).password("********").roles(role.name());
+        return user(email).password("********").roles(role.name()).authorities(new SimpleGrantedAuthority(role.name()));
     }
 }
