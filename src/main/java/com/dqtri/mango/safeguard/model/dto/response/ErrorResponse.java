@@ -1,5 +1,6 @@
 package com.dqtri.mango.safeguard.model.dto.response;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -13,6 +14,7 @@ import org.springframework.http.HttpStatus;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ErrorResponse {
+    @Schema(example = "4xx ClientError")
     private HttpStatus status;
     private String message;
 }

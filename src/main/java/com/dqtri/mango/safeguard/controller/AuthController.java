@@ -10,12 +10,11 @@ import com.dqtri.mango.safeguard.model.CoreUser;
 import com.dqtri.mango.safeguard.model.dto.payload.LoginPayload;
 import com.dqtri.mango.safeguard.model.dto.payload.RegisterPayload;
 import com.dqtri.mango.safeguard.model.dto.response.AuthenticationResponse;
+import com.dqtri.mango.safeguard.model.dto.response.ErrorResponse;
 import com.dqtri.mango.safeguard.model.dto.response.RefreshResponse;
 import com.dqtri.mango.safeguard.model.enums.Role;
 import com.dqtri.mango.safeguard.repository.UserRepository;
-import com.dqtri.mango.safeguard.security.BasicUserDetails;
 import com.dqtri.mango.safeguard.security.TokenProvider;
-import com.dqtri.mango.safeguard.security.UserPrincipal;
 import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -29,12 +28,12 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
+import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -42,9 +41,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.security.NoSuchAlgorithmException;
-import java.security.spec.InvalidKeySpecException;
 
 @RestController
 @RequestMapping("/auth")
@@ -65,7 +61,9 @@ public class AuthController {
             @ApiResponse(responseCode = "200", description = "Registered user details",
                     content = { @Content(mediaType = "application/json",
                             schema = @Schema(implementation = CoreUser.class)) }),
-            @ApiResponse(responseCode = "400", description = "The provided email or password format is invalid"),
+            @ApiResponse(responseCode = "400", description = "The provided email or password format is invalid",
+                    content = { @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class)) }),
     })
     @PostMapping(value = "/register")
     @Transactional
@@ -78,11 +76,15 @@ public class AuthController {
 
     @Operation(summary = "Login by providing email & password credentials")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Generate a refresh token",
+            @ApiResponse(responseCode = "200", description = "Generate a refresh token and a access token",
                     content = { @Content(mediaType = "application/json",
                             schema = @Schema(implementation = AuthenticationResponse.class)) }),
-            @ApiResponse(responseCode = "400", description = "The provided email or password format is invalid"),
-            @ApiResponse(responseCode = "401", description = "Invalid email or password credentials"),
+            @ApiResponse(responseCode = "400", description = "The provided email or password format is invalid",
+                    content = { @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class)) }),
+            @ApiResponse(responseCode = "401", description = "Invalid email or password credentials",
+                    content = { @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)) }),
     })
     @PostMapping(value = "/login",
             consumes = {MediaType.APPLICATION_JSON_VALUE},
@@ -97,8 +99,19 @@ public class AuthController {
         return ResponseEntity.ok(new AuthenticationResponse(refreshToken, accessToken));
     }
 
+    @Operation(summary = "Generates a new access token")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Generate a new access token",
+                    content = { @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = RefreshResponse.class)) }),
+            @ApiResponse(responseCode = "401", description = "Invalid refresh token credentials",
+                    content = { @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)) }),
+    })
     @SecurityRequirement(name = "refresh_token")
     @GetMapping(value = "/refresh", produces = {MediaType.APPLICATION_JSON_VALUE})
+    @PreAuthorize("hasRole('REFRESH')")
+//    @PreAuthorize("hasAuthority('REFRESH') or hasRole('REFRESH')")
     public ResponseEntity<RefreshResponse> refresh() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String accessToken = accessTokenProvider.generateToken(authentication);

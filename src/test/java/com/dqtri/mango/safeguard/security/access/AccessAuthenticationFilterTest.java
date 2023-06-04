@@ -86,8 +86,7 @@ class AccessAuthenticationFilterTest {
     }
 
     @Test
-     void doFilterInternal_givenInvalidBearerToken_() throws ServletException, IOException {
-        //given
+     void doFilterInternal_givenInvalidBearerToken_bearerToken() throws ServletException, IOException {
         when(httpServletRequest.getHeader("Authorization")).thenReturn("Bearer token");
         //when
         authenticationFilter.doFilterInternal(httpServletRequest, httpServletResponse, filterChain);

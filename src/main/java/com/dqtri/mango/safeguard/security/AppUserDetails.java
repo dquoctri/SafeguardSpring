@@ -8,6 +8,7 @@ package com.dqtri.mango.safeguard.security;
 import com.dqtri.mango.safeguard.model.CoreUser;
 import com.dqtri.mango.safeguard.model.enums.Role;
 import jakarta.validation.constraints.NotNull;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -18,8 +19,8 @@ import java.util.List;
 
 @Setter
 @Getter
+@EqualsAndHashCode(callSuper = false)
 public class AppUserDetails extends User implements UserDetails {
-
     @NotNull
     private CoreUser coreUser;
 

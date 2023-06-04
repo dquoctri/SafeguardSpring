@@ -5,17 +5,17 @@ import com.dqtri.mango.safeguard.security.CustomUnauthorizedEntryPoint;
 import com.dqtri.mango.safeguard.security.refresh.RefreshAuthenticationFilter;
 import jakarta.servlet.Filter;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.config.annotation.authentication.configuration.EnableGlobalAuthentication;
+import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -32,21 +32,15 @@ import java.util.List;
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity
+@EnableMethodSecurity(prePostEnabled = true)
+@EnableGlobalAuthentication
+@EnableGlobalMethodSecurity(prePostEnabled = true)
 @RequiredArgsConstructor
 public class SecurityConfig {
 
     private final AuthenticationProvider refreshAuthenticationProvider;
     private final AuthenticationProvider accessAuthenticationProvider;
     private final UserDetailsService userDetailsService;
-
-//    public SecurityConfig(@Qualifier("refreshAuthenticationProvider") AuthenticationProvider refreshAuthenticationProvider,
-//                          @Qualifier("accessAuthenticationProvider") AuthenticationProvider accessAuthenticationProvider,
-//                          UserDetailsService userDetailsService){
-//        this.refreshAuthenticationProvider = refreshAuthenticationProvider;
-//        this.accessAuthenticationProvider = accessAuthenticationProvider;
-//        this.userDetailsService = userDetailsService;
-//    }
 
     @Bean
     public SecurityFilterChain authorizeFilterChain(HttpSecurity http) throws Exception {
@@ -62,16 +56,16 @@ public class SecurityConfig {
 //                .anonymous().disable()
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .formLogin(AbstractHttpConfigurer::disable)
-                .httpBasic(AbstractHttpConfigurer::disable)
-                .logout(AbstractHttpConfigurer::disable)
+//                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .anonymous(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(requests -> requests
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/auth/register", "/auth/login").permitAll()
                         .anyRequest().authenticated()
                 )
+                .formLogin(AbstractHttpConfigurer::disable)
+                .httpBasic(AbstractHttpConfigurer::disable)
+                .logout(AbstractHttpConfigurer::disable)
                 //https://docs.spring.io/spring-security/site/docs/4.2.1.RELEASE/reference/htmlsingle/#filter-ordering
                 .addFilterBefore(refreshAuthenticationFilter(http), UsernamePasswordAuthenticationFilter.class)
                 .addFilterAfter(accessAuthenticationFilter(http), RefreshAuthenticationFilter.class)
@@ -105,22 +99,19 @@ public class SecurityConfig {
     public AuthenticationManager authenticationManager(HttpSecurity http) throws Exception {
         AuthenticationManagerBuilder builder = http.getSharedObject(AuthenticationManagerBuilder.class);
         builder.userDetailsService(userDetailsService).passwordEncoder(passwordEncoder());
-//        builder.authenticationProvider(accessAuthenticationProvider);
-//        builder.authenticationProvider(refreshAuthenticationProvider);
+        builder.authenticationProvider(accessAuthenticationProvider);
+        builder.authenticationProvider(refreshAuthenticationProvider);
         return builder.build();
     }
 
-    @Bean
     public Filter accessAuthenticationFilter(HttpSecurity http) throws Exception {
-        AuthenticationManagerBuilder builder = http.getSharedObject(AuthenticationManagerBuilder.class);
-        builder.authenticationProvider(accessAuthenticationProvider);
-        return new AccessAuthenticationFilter(builder.build());
+        AuthenticationManager authenticationManager = authenticationManager(http);
+        return new AccessAuthenticationFilter(authenticationManager);
     }
-    @Bean
+
     public Filter refreshAuthenticationFilter(HttpSecurity http) throws Exception {
-        AuthenticationManagerBuilder builder = http.getSharedObject(AuthenticationManagerBuilder.class);
-        builder.authenticationProvider(refreshAuthenticationProvider);
-        return new RefreshAuthenticationFilter(builder.build());
+        AuthenticationManager authenticationManager = authenticationManager(http);
+        return new RefreshAuthenticationFilter(authenticationManager);
     }
 
     @Bean

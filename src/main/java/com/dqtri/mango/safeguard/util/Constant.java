@@ -22,6 +22,10 @@ public class Constant {
         return "/auth/refresh".equals(request.getServletPath());
     }
 
+    public static String getAuthorizationToken(HttpServletRequest request) {
+        return request.getHeader(AUTHORIZATION_HEADER);
+    }
+
     public static boolean validateToken(String accessToken) {
         if (!StringUtils.hasText(accessToken)) {
             log.error("Authentication Token is missing");

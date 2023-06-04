@@ -15,7 +15,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
-import static com.dqtri.mango.safeguard.util.Constant.AUTHORIZATION_HEADER;
+import static com.dqtri.mango.safeguard.util.Constant.getAuthorizationToken;
 import static com.dqtri.mango.safeguard.util.Constant.isPreflightRequest;
 import static com.dqtri.mango.safeguard.util.Constant.isRefreshRequest;
 import static com.dqtri.mango.safeguard.util.Constant.validateToken;
@@ -43,9 +43,5 @@ public class RefreshAuthenticationFilter extends OncePerRequestFilter {
             }
         }
         filterChain.doFilter(request, response);
-    }
-
-    private String getAuthorizationToken(HttpServletRequest request) {
-        return request.getHeader(AUTHORIZATION_HEADER);
     }
 }

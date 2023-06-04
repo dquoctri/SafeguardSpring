@@ -13,7 +13,7 @@ import java.util.List;
 
 @Setter
 @Getter
-@EqualsAndHashCode
+@EqualsAndHashCode(callSuper = false)
 public class BasicUserDetails extends User implements UserDetails {
 
     @NotNull
