@@ -7,6 +7,7 @@ package com.dqtri.mango.safeguard.controller;
 
 
 import com.dqtri.mango.safeguard.config.SecurityConfig;
+import com.dqtri.mango.safeguard.common.WithMockBasicUserDetails;
 import com.dqtri.mango.safeguard.model.SafeguardUser;
 import com.dqtri.mango.safeguard.model.dto.payload.LoginPayload;
 import com.dqtri.mango.safeguard.model.dto.payload.RegisterPayload;
@@ -14,6 +15,7 @@ import com.dqtri.mango.safeguard.model.dto.response.AuthenticationResponse;
 import com.dqtri.mango.safeguard.model.dto.response.ErrorResponse;
 import com.dqtri.mango.safeguard.model.dto.response.RefreshResponse;
 import com.dqtri.mango.safeguard.model.enums.Role;
+import com.dqtri.mango.safeguard.repository.RefreshTokenBlackListRepository;
 import com.dqtri.mango.safeguard.repository.UserRepository;
 import com.dqtri.mango.safeguard.security.TokenProvider;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -29,6 +31,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -44,11 +47,14 @@ import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -66,6 +72,9 @@ public class AuthControllerIntegrationTest extends AbstractIntegrationTest {
     private TokenProvider tokenProvider;
     @MockBean
     private UserRepository userRepository;
+
+    @MockBean
+    private RefreshTokenBlackListRepository refreshTokenBlackListRepository;
 
     @BeforeEach
     public void setup() {
@@ -291,7 +300,6 @@ public class AuthControllerIntegrationTest extends AbstractIntegrationTest {
             assertThat(refreshResponse.getAccessToken()).isEqualTo("token_value");
         }
 
-
         @Test
         void refreshToken_withRefreshRoleCredentials_thenSuccess() throws Exception {
             MvcResult mvcResult = mvc.perform(get(REFRESH_ROUTE)
@@ -351,6 +359,56 @@ public class AuthControllerIntegrationTest extends AbstractIntegrationTest {
         @WithMockUser(authorities = {"INVALID", "ADMIN", "SUBMITTER", "MANAGER", "SPECIALIST", "NONE"})
         void refreshToken_mockAppAuthorities_thenForbidden() throws Exception {
             mvc.perform(get(REFRESH_ROUTE)).andExpect(status().isForbidden());
+            verify(tokenProvider, never()).generateToken(any());
+        }
+    }
+
+    @Nested
+    class LogoutIntegrationTest {
+        private static final String LOGOUT_ROUTE = "/auth/logout";
+        private HttpHeaders headers;
+
+        @BeforeEach
+        public void setup() {
+            headers = new HttpHeaders();
+            headers.add(HttpHeaders.AUTHORIZATION, "mock_token");
+        }
+
+        @Test
+        @WithMockBasicUserDetails(roles = "REFRESH")
+        void logoutToken_mockRefreshRoleCredentials_thenSuccess() throws Exception {
+            mvc.perform(delete(LOGOUT_ROUTE).headers(headers)).andExpect(status().isNoContent());
+            verify(refreshTokenBlackListRepository, times(1)).save(any());
+        }
+
+        @Test
+        @WithMockBasicUserDetails(authorities = "REFRESH")
+        void logoutToken_mockRefreshAuthorityCredentials_thenSuccess() throws Exception {
+            mvc.perform(delete(LOGOUT_ROUTE).headers(headers)).andExpect(status().isNoContent());
+            verify(refreshTokenBlackListRepository, times(1)).save(any());
+        }
+
+        @Test
+        void logout_givenNothing_thenUnauthorized() throws Exception {
+            mvc.perform(delete(LOGOUT_ROUTE).headers(headers)).andExpect(status().isUnauthorized());
+            verify(refreshTokenBlackListRepository, never()).save(any());
+        }
+
+        @Test
+        @WithMockUser(roles = {"INVALID", "ADMIN", "SUBMITTER", "MANAGER", "SPECIALIST", "NONE"})
+        void logout_mockAppRoles_thenForbidden() throws Exception {
+            HttpHeaders headers = new HttpHeaders();
+            headers.add(HttpHeaders.AUTHORIZATION, "mock_token");
+            mvc.perform(delete(LOGOUT_ROUTE).headers(headers)).andExpect(status().isForbidden());
+            verify(tokenProvider, never()).generateToken(any());
+        }
+
+        @Test
+        @WithMockUser(authorities = {"INVALID", "ADMIN", "SUBMITTER", "MANAGER", "SPECIALIST", "NONE"})
+        void logout_mockAppAuthorities_thenForbidden() throws Exception {
+            HttpHeaders headers = new HttpHeaders();
+            headers.add(HttpHeaders.AUTHORIZATION, "mock_token");
+            mvc.perform(delete(LOGOUT_ROUTE).headers(headers)).andExpect(status().isForbidden());
             verify(tokenProvider, never()).generateToken(any());
         }
     }

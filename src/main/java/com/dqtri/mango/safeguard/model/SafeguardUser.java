@@ -2,6 +2,7 @@ package com.dqtri.mango.safeguard.model;
 
 import com.dqtri.mango.safeguard.model.enums.Role;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -22,13 +23,16 @@ import lombok.Setter;
 @Entity
 public class SafeguardUser extends BaseEntity {
 
+    @Schema(example = "registered@dqtri.com")
     @Column(name = "email", length = 320, nullable = false, unique = true)
     private String email;
 
+    @Schema(example = "SUBMITTER")
     @Enumerated(EnumType.STRING)
     @Column(name = "role", length = 25, nullable = false)
     private Role role;
 
+    @Schema(hidden = true)
     @JsonIgnore
     @Column(name = "password", length = 60, nullable = false)
     private String password;

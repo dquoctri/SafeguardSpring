@@ -16,6 +16,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -39,49 +40,69 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 @SecurityRequirement(name = "access_token")
+@Tag(name = "User API", description = "Endpoints for managing user operations")
 public class UserController {
 
     private final PasswordEncoder passwordEncoder;
     private final UserRepository userRepository;
 
-    @Operation(summary = "Get All Users")
+    @Operation(summary = "Get users", description = "Retrieve a paginated list of users")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "User pagination",
-                    content = { @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = Page.class)) })
+            @ApiResponse(responseCode = "200", description = "Successful retrieval a paginated list of users",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = Page.class))})
     })
     @Transactional(readOnly = true)
     @GetMapping("/users")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Page<SafeguardUser>> getUsers(@Valid PageCriteria pageCriteria
-    ) {
+    public ResponseEntity<Page<SafeguardUser>> getUsers(@Valid PageCriteria pageCriteria) {
         Pageable pageable = pageCriteria.toPageable("pk");
         Page<SafeguardUser> users = userRepository.findAll(pageable);
         return ResponseEntity.ok(users);
     }
 
+    @Operation(summary = "Get user by ID", description = "Retrieve user information based on the provided ID")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Successful retrieval of the user",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = SafeguardUser.class))})
+    })
     @GetMapping("/users/{userId}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> getUser(@PathVariable("userId") Long userId) {
-        return ResponseEntity.ok(getUserOrElseThrow(userId));
+    public ResponseEntity<SafeguardUser> getUser(@PathVariable("userId") Long userId) {
+        SafeguardUser safeguardUser = getUserOrElseThrow(userId);
+        return ResponseEntity.ok(safeguardUser);
     }
 
+    @Operation(summary = "Get my profiles", description = "Retrieve profiles of the currently authenticated user")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Successful retrieval of profiles",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = SafeguardUser.class))})
+    })
     @GetMapping("/users/me")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<?> getMyProfiles(@UserPrincipal AppUserDetails currentUser) {
+    public ResponseEntity<SafeguardUser> getMyProfiles(@UserPrincipal AppUserDetails currentUser) {
         SafeguardUser safeguardUser = currentUser.getSafeguardUser();
         return ResponseEntity.ok(safeguardUser);
     }
 
-    @PostMapping(value = "/users", consumes = {MediaType.APPLICATION_JSON_VALUE}, produces = {MediaType.APPLICATION_JSON_VALUE})
+    @Operation(summary = "Create user", description = "Create a new user with the provided details")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Successful creation of user",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = SafeguardUser.class))})
+    })
+    @PostMapping(value = "/users", consumes = {MediaType.APPLICATION_JSON_VALUE},
+            produces = {MediaType.APPLICATION_JSON_VALUE})
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> createUser(@RequestBody @Valid UserCreatingPayload payload) {
-        checkConflictUserEmail(payload.getEmail());
+    public ResponseEntity<SafeguardUser> createUser(@RequestBody @Valid UserCreatingPayload payload) {
+        validateUniqueEmail(payload.getEmail());
         SafeguardUser saved = userRepository.save(createCoreUser(payload));
         return new ResponseEntity<>(saved, HttpStatus.CREATED);
     }
 
-    private void checkConflictUserEmail(String email) {
+    private void validateUniqueEmail(String email) {
         if (userRepository.existsByEmail(email)) {
             throw new ConflictException(String.format("%s is already in use", email));
         }
@@ -95,30 +116,49 @@ public class UserController {
         return user;
     }
 
+    @Operation(summary = "Update user", description = "Update an existing user with the provided details.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Successful update of user",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = SafeguardUser.class))}),
+            @ApiResponse(responseCode = "404", description = "User not found"),
+            @ApiResponse(responseCode = "400", description = "Invalid request payload")
+    })
     @PutMapping("/users/{userId}")
     @PreAuthorize("hasRole('ADMIN') and hasPermission('#userId', 'nonAdminResource')")
-    public ResponseEntity<?> updateUser(@PathVariable("userId") Long userId,
-                                        @Valid @RequestBody UserUpdatingPayload payload) {
+    public ResponseEntity<SafeguardUser> updateUser(@PathVariable("userId") Long userId,
+                                                    @Valid @RequestBody UserUpdatingPayload payload) {
         SafeguardUser user = getUserOrElseThrow(userId);
         user.setRole(payload.getRole());
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(user);
     }
 
+    @Operation(summary = "Update user password", description = "Update the password of an existing user.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Successful update of user password"),
+            @ApiResponse(responseCode = "404", description = "User not found"),
+            @ApiResponse(responseCode = "400", description = "Invalid request payload")
+    })
     @PutMapping("/users/{userId}/password")
     @PreAuthorize("hasRole('ADMIN') and hasPermission('#userId', 'nonAdminResource')")
-    public ResponseEntity<?> updateUserPassword(@PathVariable("userId") Long userId,
-                                                @Valid @RequestBody ResetPasswordPayload payload) {
+    public ResponseEntity<Void> updateUserPassword(@PathVariable("userId") Long userId,
+                                                   @Valid @RequestBody ResetPasswordPayload payload) {
         SafeguardUser user = getUserOrElseThrow(userId);
         user.setPassword(passwordEncoder.encode(payload.getPassword()));
         return ResponseEntity.ok().build();
     }
 
+    @Operation(summary = "Delete user", description = "Delete an existing user.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Successful deletion of user"),
+            @ApiResponse(responseCode = "404", description = "User not found")
+    })
     @DeleteMapping("/users/{userId}")
     @PreAuthorize("hasRole('ADMIN') and hasPermission('#userId', 'nonAdminResource')")
-    public ResponseEntity<?> deleteUser(@PathVariable("userId") Long userId) {
+    public ResponseEntity<Void> deleteUser(@PathVariable("userId") Long userId) {
         SafeguardUser user = getUserOrElseThrow(userId);
         user.setRole(Role.NONE);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.noContent().build();
     }
 
     private SafeguardUser getUserOrElseThrow(@NotNull Long id) {

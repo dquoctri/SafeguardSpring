@@ -1,5 +1,6 @@
 package com.dqtri.mango.safeguard.model.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Min;
 import lombok.Getter;
 import lombok.Setter;
@@ -11,8 +12,11 @@ import org.springframework.data.domain.Sort;
 @Getter
 public final class PageCriteria {
     @Min(0)
+    @Schema(example = "0")
     private int pageNumber = 0;
+
     @Min(1)
+    @Schema(example = "25")
     private int pageSize = 25;
 
     public Pageable toPageable(String sortProperties) {

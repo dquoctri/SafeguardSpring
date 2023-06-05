@@ -42,6 +42,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -73,11 +74,11 @@ public class AuthController {
     @Operation(summary = "Register by providing necessary registration details")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Registered user details",
-                    content = { @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = SafeguardUser.class)) }),
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = SafeguardUser.class))}),
             @ApiResponse(responseCode = "400", description = "The provided email or password format is invalid",
-                    content = { @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = ProblemDetail.class)) }),
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}),
     })
     @PostMapping(value = "/register")
     @Transactional
@@ -105,14 +106,14 @@ public class AuthController {
     @Operation(summary = "Login by providing email & password credentials")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Generate a refresh token and a access token",
-                    content = { @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = AuthenticationResponse.class)) }),
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = AuthenticationResponse.class))}),
             @ApiResponse(responseCode = "400", description = "The provided email or password format is invalid",
-                    content = { @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = ProblemDetail.class)) }),
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}),
             @ApiResponse(responseCode = "401", description = "Invalid email or password credentials",
-                    content = { @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorResponse.class)) }),
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class))}),
     })
     @PostMapping(value = "/login",
             consumes = {MediaType.APPLICATION_JSON_VALUE},
@@ -130,11 +131,11 @@ public class AuthController {
     @Operation(summary = "Generates a new access token")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Generate a new access token",
-                    content = { @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = RefreshResponse.class)) }),
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = RefreshResponse.class))}),
             @ApiResponse(responseCode = "401", description = "Invalid refresh token credentials",
-                    content = { @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorResponse.class)) }),
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class))}),
     })
     @SecurityRequirement(name = "refresh_token")
     @GetMapping(value = "/refresh", produces = {MediaType.APPLICATION_JSON_VALUE})
@@ -145,18 +146,30 @@ public class AuthController {
         return ResponseEntity.ok(new RefreshResponse(accessToken));
     }
 
+    @Operation(summary = "Sign out the refresh token")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Add the token into black list", content = @Content),
+            @ApiResponse(responseCode = "401", description = "Invalid refresh token credentials",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class))}),
+    })
     @SecurityRequirement(name = "refresh_token")
-    @PostMapping("logout")
+    @DeleteMapping("logout")
     @PreAuthorize("hasAuthority('REFRESH') or hasRole('REFRESH')")
-    public ResponseEntity<?> logout(@UserPrincipal BasicUserDetails currentUser,
-                                         @RequestHeader(HttpHeaders.AUTHORIZATION) @Schema(hidden = true) String refreshToken) {
+    public ResponseEntity<Void> logout(@UserPrincipal BasicUserDetails currentUser,
+                                    @RequestHeader(HttpHeaders.AUTHORIZATION) @Schema(hidden = true) String refreshToken) {
+        RefreshTokenBlackList refreshTokenBlackList = createRTBlackList(currentUser.getUsername(), refreshToken);
+        refreshTokenBlackListRepository.save(refreshTokenBlackList);
+        return ResponseEntity.noContent().build();
+    }
+
+    private RefreshTokenBlackList createRTBlackList(String email, String refreshToken){
         RefreshTokenBlackList refreshTokenBlackList = new RefreshTokenBlackList();
-        refreshTokenBlackList.setEmail(currentUser.getUsername());
+        refreshTokenBlackList.setEmail(email);
         refreshTokenBlackList.setToken(refreshToken);
         Instant expirationDate = new Date().toInstant().plus(refreshExpirationInMs, ChronoUnit.MILLIS);
         refreshTokenBlackList.setExpirationDate(expirationDate);
-        refreshTokenBlackListRepository.save(refreshTokenBlackList);
-        return ResponseEntity.ok().build();
+        return refreshTokenBlackList;
     }
 
     @Hidden
