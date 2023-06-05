@@ -5,7 +5,7 @@
 
 package com.dqtri.mango.safeguard.security;
 
-import com.dqtri.mango.safeguard.model.CoreUser;
+import com.dqtri.mango.safeguard.model.SafeguardUser;
 import com.dqtri.mango.safeguard.model.enums.Role;
 import jakarta.validation.constraints.NotNull;
 import lombok.EqualsAndHashCode;
@@ -22,14 +22,14 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = false)
 public class AppUserDetails extends User implements UserDetails {
     @NotNull
-    private CoreUser coreUser;
+    private SafeguardUser safeguardUser;
 
-    public AppUserDetails(@NotNull CoreUser user) {
+    public AppUserDetails(@NotNull SafeguardUser user) {
         super(user.getEmail(), user.getPassword(), createAuthoritiesWithRole(user.getRole()));
-        this.coreUser = user;
+        this.safeguardUser = user;
     }
 
-    public static AppUserDetails create(@NotNull CoreUser user) {
+    public static AppUserDetails create(@NotNull SafeguardUser user) {
         return new AppUserDetails(user);
     }
 

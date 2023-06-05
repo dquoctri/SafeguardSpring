@@ -40,11 +40,11 @@ public class Submission extends BaseEntity {
 
     @ManyToOne
     @JoinColumn(name = "submitter_fk")
-    private CoreUser submitter;
+    private SafeguardUser submitter;
 
     @ManyToOne
     @JoinColumn(name = "assigned_user_fk")
-    private CoreUser assignedUser;
+    private SafeguardUser assignedUser;
 
     @Column(name = "comment", length = 1000)
     private String comment;

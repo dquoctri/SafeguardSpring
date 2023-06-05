@@ -1,6 +1,6 @@
 package com.dqtri.mango.safeguard.security.permissions;
 
-import com.dqtri.mango.safeguard.model.CoreUser;
+import com.dqtri.mango.safeguard.model.SafeguardUser;
 import com.dqtri.mango.safeguard.model.enums.Role;
 import com.dqtri.mango.safeguard.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -21,7 +21,7 @@ public class IsAdminResourcePermission extends Permission {
     @Override
     public boolean isAllowed(Authentication authentication, Object targetDomainObject) {
         Long userId = (Long) targetDomainObject;
-        CoreUser user = userRepository.findById(userId)
+        SafeguardUser user = userRepository.findById(userId)
                 .orElseThrow(() -> new EntityNotFoundException(String.format("User is not found with id: %s", userId)));
 
         return Role.ADMIN.equals(user.getRole());

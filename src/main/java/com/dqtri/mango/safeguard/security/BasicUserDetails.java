@@ -1,6 +1,6 @@
 package com.dqtri.mango.safeguard.security;
 
-import com.dqtri.mango.safeguard.model.CoreUser;
+import com.dqtri.mango.safeguard.model.SafeguardUser;
 import jakarta.validation.constraints.NotNull;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -17,14 +17,14 @@ import java.util.List;
 public class BasicUserDetails extends User implements UserDetails {
 
     @NotNull
-    private CoreUser coreUser;
+    private SafeguardUser safeguardUser;
 
-    public BasicUserDetails(@NotNull CoreUser user) {
+    public BasicUserDetails(@NotNull SafeguardUser user) {
         super(user.getEmail(), user.getPassword(), createRefreshAuthorities());
-        this.coreUser = user;
+        this.safeguardUser = user;
     }
 
-    public static BasicUserDetails create(@NotNull CoreUser user) {
+    public static BasicUserDetails create(@NotNull SafeguardUser user) {
         return new BasicUserDetails(user);
     }
 

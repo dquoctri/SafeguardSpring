@@ -15,7 +15,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Component;
 
@@ -43,7 +42,7 @@ public class AccessTokenResolver implements TokenResolver {
         Claims body = claimsJws.getBody();
         String subject = body.getSubject();
         BasicUserDetails userDetails = (BasicUserDetails) userDetailsService.loadUserByUsername(subject);
-        AppUserDetails appUserDetails = AppUserDetails.create(userDetails.getCoreUser());
+        AppUserDetails appUserDetails = AppUserDetails.create(userDetails.getSafeguardUser());
         return new AccessAuthenticationToken(appUserDetails);
     }
 

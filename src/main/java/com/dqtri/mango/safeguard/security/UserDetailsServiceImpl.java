@@ -5,7 +5,7 @@
 
 package com.dqtri.mango.safeguard.security;
 
-import com.dqtri.mango.safeguard.model.CoreUser;
+import com.dqtri.mango.safeguard.model.SafeguardUser;
 import com.dqtri.mango.safeguard.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -23,7 +23,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     @Override
     @Transactional(readOnly = true)
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        CoreUser user = userRepository.findByEmail(email)
+        SafeguardUser user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException(String.format("Username not found: %s", email)));
         return BasicUserDetails.create(user);
     }

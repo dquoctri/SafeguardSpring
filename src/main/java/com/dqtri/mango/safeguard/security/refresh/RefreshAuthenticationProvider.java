@@ -23,8 +23,8 @@ public class RefreshAuthenticationProvider implements AuthenticationProvider {
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
         try {
             validate(authentication);
-            String accessToken = authentication.getName().substring(BEARER.length());
-            return refreshTokenResolver.verifyToken(accessToken);
+            String refreshToken = authentication.getName().substring(BEARER.length());
+            return refreshTokenResolver.verifyToken(refreshToken);
         } catch (Exception e) {
             log.error("Authentication failed", e);
         }

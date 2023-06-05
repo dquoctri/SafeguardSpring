@@ -1,7 +1,7 @@
 package com.dqtri.mango.safeguard.controller;
 
 import com.dqtri.mango.safeguard.exception.ConflictException;
-import com.dqtri.mango.safeguard.model.CoreUser;
+import com.dqtri.mango.safeguard.model.SafeguardUser;
 import com.dqtri.mango.safeguard.model.dto.PageCriteria;
 import com.dqtri.mango.safeguard.model.dto.payload.ResetPasswordPayload;
 import com.dqtri.mango.safeguard.model.dto.payload.UserCreatingPayload;
@@ -53,10 +53,10 @@ public class UserController {
     @Transactional(readOnly = true)
     @GetMapping("/users")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Page<CoreUser>> getUsers(@Valid PageCriteria pageCriteria
+    public ResponseEntity<Page<SafeguardUser>> getUsers(@Valid PageCriteria pageCriteria
     ) {
         Pageable pageable = pageCriteria.toPageable("pk");
-        Page<CoreUser> users = userRepository.findAll(pageable);
+        Page<SafeguardUser> users = userRepository.findAll(pageable);
         return ResponseEntity.ok(users);
     }
 
@@ -69,15 +69,15 @@ public class UserController {
     @GetMapping("/users/me")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> getMyProfiles(@UserPrincipal AppUserDetails currentUser) {
-        CoreUser coreUser = currentUser.getCoreUser();
-        return ResponseEntity.ok(coreUser);
+        SafeguardUser safeguardUser = currentUser.getSafeguardUser();
+        return ResponseEntity.ok(safeguardUser);
     }
 
     @PostMapping(value = "/users", consumes = {MediaType.APPLICATION_JSON_VALUE}, produces = {MediaType.APPLICATION_JSON_VALUE})
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> createUser(@RequestBody @Valid UserCreatingPayload payload) {
         checkConflictUserEmail(payload.getEmail());
-        CoreUser saved = userRepository.save(createCoreUser(payload));
+        SafeguardUser saved = userRepository.save(createCoreUser(payload));
         return new ResponseEntity<>(saved, HttpStatus.CREATED);
     }
 
@@ -87,8 +87,8 @@ public class UserController {
         }
     }
 
-    private CoreUser createCoreUser(@NotNull UserCreatingPayload payload) {
-        CoreUser user = new CoreUser();
+    private SafeguardUser createCoreUser(@NotNull UserCreatingPayload payload) {
+        SafeguardUser user = new SafeguardUser();
         user.setEmail(payload.getEmail());
         user.setPassword(passwordEncoder.encode(payload.getPassword()));
         user.setRole(payload.getRole());
@@ -99,7 +99,7 @@ public class UserController {
     @PreAuthorize("hasRole('ADMIN') and hasPermission('#userId', 'nonAdminResource')")
     public ResponseEntity<?> updateUser(@PathVariable("userId") Long userId,
                                         @Valid @RequestBody UserUpdatingPayload payload) {
-        CoreUser user = getUserOrElseThrow(userId);
+        SafeguardUser user = getUserOrElseThrow(userId);
         user.setRole(payload.getRole());
         return ResponseEntity.ok().build();
     }
@@ -108,7 +108,7 @@ public class UserController {
     @PreAuthorize("hasRole('ADMIN') and hasPermission('#userId', 'nonAdminResource')")
     public ResponseEntity<?> updateUserPassword(@PathVariable("userId") Long userId,
                                                 @Valid @RequestBody ResetPasswordPayload payload) {
-        CoreUser user = getUserOrElseThrow(userId);
+        SafeguardUser user = getUserOrElseThrow(userId);
         user.setPassword(passwordEncoder.encode(payload.getPassword()));
         return ResponseEntity.ok().build();
     }
@@ -116,12 +116,12 @@ public class UserController {
     @DeleteMapping("/users/{userId}")
     @PreAuthorize("hasRole('ADMIN') and hasPermission('#userId', 'nonAdminResource')")
     public ResponseEntity<?> deleteUser(@PathVariable("userId") Long userId) {
-        CoreUser user = getUserOrElseThrow(userId);
+        SafeguardUser user = getUserOrElseThrow(userId);
         user.setRole(Role.NONE);
         return ResponseEntity.ok().build();
     }
 
-    private CoreUser getUserOrElseThrow(@NotNull Long id) {
+    private SafeguardUser getUserOrElseThrow(@NotNull Long id) {
         return userRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException(String.format("User is not found with id: %s", id)));
     }

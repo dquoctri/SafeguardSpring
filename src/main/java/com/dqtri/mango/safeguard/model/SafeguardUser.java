@@ -12,13 +12,15 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 
-@Entity
-@Table(name = "core_user")
+
+
+@Data
 @Setter
 @Getter
-@Data
 @EqualsAndHashCode(callSuper = true, exclude = "password")
-public class CoreUser extends BaseEntity {
+@Table(name = "safeguard_user")
+@Entity
+public class SafeguardUser extends BaseEntity {
 
     @Column(name = "email", length = 320, nullable = false, unique = true)
     private String email;

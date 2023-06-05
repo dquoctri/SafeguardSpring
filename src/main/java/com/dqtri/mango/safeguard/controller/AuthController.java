@@ -6,15 +6,19 @@
 package com.dqtri.mango.safeguard.controller;
 
 import com.dqtri.mango.safeguard.exception.ConflictException;
-import com.dqtri.mango.safeguard.model.CoreUser;
+import com.dqtri.mango.safeguard.model.RefreshTokenBlackList;
+import com.dqtri.mango.safeguard.model.SafeguardUser;
 import com.dqtri.mango.safeguard.model.dto.payload.LoginPayload;
 import com.dqtri.mango.safeguard.model.dto.payload.RegisterPayload;
 import com.dqtri.mango.safeguard.model.dto.response.AuthenticationResponse;
 import com.dqtri.mango.safeguard.model.dto.response.ErrorResponse;
 import com.dqtri.mango.safeguard.model.dto.response.RefreshResponse;
 import com.dqtri.mango.safeguard.model.enums.Role;
+import com.dqtri.mango.safeguard.repository.RefreshTokenBlackListRepository;
 import com.dqtri.mango.safeguard.repository.UserRepository;
+import com.dqtri.mango.safeguard.security.BasicUserDetails;
 import com.dqtri.mango.safeguard.security.TokenProvider;
+import com.dqtri.mango.safeguard.security.UserPrincipal;
 import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -27,6 +31,8 @@ import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
@@ -39,8 +45,13 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.Date;
 
 @RestController
 @RequestMapping("/auth")
@@ -50,28 +61,45 @@ public class AuthController {
 
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
-
     private final TokenProvider refreshTokenProvider;
-
     private final TokenProvider accessTokenProvider;
     private final UserRepository userRepository;
+
+    private final RefreshTokenBlackListRepository refreshTokenBlackListRepository;
+
+    @Value("${safeguard.auth.refresh.expirationInMs}")
+    private long refreshExpirationInMs;
 
     @Operation(summary = "Register by providing necessary registration details")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Registered user details",
                     content = { @Content(mediaType = "application/json",
-                            schema = @Schema(implementation = CoreUser.class)) }),
+                            schema = @Schema(implementation = SafeguardUser.class)) }),
             @ApiResponse(responseCode = "400", description = "The provided email or password format is invalid",
                     content = { @Content(mediaType = "application/json",
                             schema = @Schema(implementation = ProblemDetail.class)) }),
     })
     @PostMapping(value = "/register")
     @Transactional
-    public ResponseEntity<CoreUser> register(@RequestBody @Valid RegisterPayload register) {
+    public ResponseEntity<SafeguardUser> register(@RequestBody @Valid RegisterPayload register) {
         checkConflictUserEmail(register.getEmail());
-        CoreUser coreUser = createCoreUser(register);
-        CoreUser saved = userRepository.save(coreUser);
+        SafeguardUser safeguardUser = createCoreUser(register);
+        SafeguardUser saved = userRepository.save(safeguardUser);
         return ResponseEntity.ok(saved);
+    }
+
+    private void checkConflictUserEmail(String email) {
+        if (userRepository.existsByEmail(email)) {
+            throw new ConflictException(String.format("%s is already in use", email));
+        }
+    }
+
+    private SafeguardUser createCoreUser(@NotNull RegisterPayload register) {
+        SafeguardUser user = new SafeguardUser();
+        user.setEmail(register.getEmail());
+        user.setPassword(passwordEncoder.encode(register.getPassword()));
+        user.setRole(Role.SUBMITTER);
+        return user;
     }
 
     @Operation(summary = "Login by providing email & password credentials")
@@ -117,18 +145,18 @@ public class AuthController {
         return ResponseEntity.ok(new RefreshResponse(accessToken));
     }
 
-    private void checkConflictUserEmail(String email) {
-        if (userRepository.existsByEmail(email)) {
-            throw new ConflictException(String.format("%s is already in use", email));
-        }
-    }
-
-    private CoreUser createCoreUser(@NotNull RegisterPayload register) {
-        CoreUser user = new CoreUser();
-        user.setEmail(register.getEmail());
-        user.setPassword(passwordEncoder.encode(register.getPassword()));
-        user.setRole(Role.SUBMITTER);
-        return user;
+    @SecurityRequirement(name = "refresh_token")
+    @PostMapping("logout")
+    @PreAuthorize("hasAuthority('REFRESH') or hasRole('REFRESH')")
+    public ResponseEntity<?> logout(@UserPrincipal BasicUserDetails currentUser,
+                                         @RequestHeader(HttpHeaders.AUTHORIZATION) @Schema(hidden = true) String refreshToken) {
+        RefreshTokenBlackList refreshTokenBlackList = new RefreshTokenBlackList();
+        refreshTokenBlackList.setEmail(currentUser.getUsername());
+        refreshTokenBlackList.setToken(refreshToken);
+        Instant expirationDate = new Date().toInstant().plus(refreshExpirationInMs, ChronoUnit.MILLIS);
+        refreshTokenBlackList.setExpirationDate(expirationDate);
+        refreshTokenBlackListRepository.save(refreshTokenBlackList);
+        return ResponseEntity.ok().build();
     }
 
     @Hidden
@@ -144,6 +172,7 @@ public class AuthController {
     }
 
     @Hidden
+    @SecurityRequirement(name = "refresh_token")
     @PostMapping("change-password")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<String> changePassword() {

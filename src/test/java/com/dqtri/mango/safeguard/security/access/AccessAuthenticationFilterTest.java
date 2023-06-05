@@ -1,10 +1,8 @@
 package com.dqtri.mango.safeguard.security.access;
 
-import com.dqtri.mango.safeguard.model.CoreUser;
+import com.dqtri.mango.safeguard.model.SafeguardUser;
 import com.dqtri.mango.safeguard.model.enums.Role;
 import com.dqtri.mango.safeguard.security.AppUserDetails;
-import com.dqtri.mango.safeguard.security.access.AccessAuthenticationFilter;
-import com.dqtri.mango.safeguard.security.access.AccessAuthenticationToken;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -101,12 +99,12 @@ class AccessAuthenticationFilterTest {
     @Test
     void doFilterInternal_bearerToken_returnAuthenticated() throws ServletException, IOException {
         //given
-        CoreUser coreUser = new CoreUser();
-        coreUser.setEmail("core@email.com");
-        coreUser.setPassword("core@email");
-        coreUser.setRole(Role.SUBMITTER);
+        SafeguardUser safeguardUser = new SafeguardUser();
+        safeguardUser.setEmail("safeguard@email.com");
+        safeguardUser.setPassword("safeguard@email");
+        safeguardUser.setRole(Role.SUBMITTER);
 
-        AppUserDetails userDetails = new AppUserDetails(coreUser);
+        AppUserDetails userDetails = new AppUserDetails(safeguardUser);
         Authentication authentication = new AccessAuthenticationToken(userDetails);
         AccessAuthenticationToken jwtAuthenticationToken = new AccessAuthenticationToken("Bearer token");
         when(httpServletRequest.getHeader("Authorization")).thenReturn("Bearer token");

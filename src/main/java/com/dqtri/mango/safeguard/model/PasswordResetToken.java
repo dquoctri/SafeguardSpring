@@ -14,7 +14,7 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.Date;
+import java.time.Instant;
 
 @Setter
 @Getter
@@ -25,13 +25,13 @@ public class PasswordResetToken extends BaseEntity {
     @Column(nullable = false, unique = true)
     private String token;
 
-    @Column(nullable = false)
-    private Date expiryDate;
+    @Column(name = "expiry_date", nullable = false)
+    private Instant expirationDate;
 
     @Column(name = "is_dirty")
     private boolean isDirty;
 
-    @ManyToOne(targetEntity = CoreUser.class, fetch = FetchType.EAGER)
+    @ManyToOne(targetEntity = SafeguardUser.class, fetch = FetchType.EAGER)
     @JoinColumn(nullable = false, name = "user_fk")
-    private CoreUser user;
+    private SafeguardUser user;
 }

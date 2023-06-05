@@ -1,5 +1,7 @@
 package com.dqtri.mango.safeguard.security.refresh;
 
+import com.dqtri.mango.safeguard.model.RefreshTokenBlackList;
+import com.dqtri.mango.safeguard.repository.RefreshTokenBlackListRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -14,6 +16,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.Optional;
 
 import static com.dqtri.mango.safeguard.util.Constant.getAuthorizationToken;
 import static com.dqtri.mango.safeguard.util.Constant.isPreflightRequest;
@@ -25,13 +28,15 @@ import static com.dqtri.mango.safeguard.util.Constant.validateToken;
 public class RefreshAuthenticationFilter extends OncePerRequestFilter {
     private final AuthenticationManager authenticationManager;
 
+    private final RefreshTokenBlackListRepository refreshTokenBlackListRepository;
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws IOException, ServletException {
         if (!isPreflightRequest(request) && isRefreshRequest(request)) {
             try {
-                String accessToken = getAuthorizationToken(request);
-                if (StringUtils.hasText(accessToken) && validateToken(accessToken)) {
-                    var refreshAuthenticationToken = new RefreshAuthenticationToken(accessToken);
+                String refreshToken = getAuthorizationToken(request);
+                if (StringUtils.hasText(refreshToken) && validateToken(refreshToken) && !isTokenInBlackList(refreshToken)) {
+                    var refreshAuthenticationToken = new RefreshAuthenticationToken(refreshToken);
                     Authentication authentication = authenticationManager.authenticate(refreshAuthenticationToken);
                     log.debug("Logging in with [{}]", authentication.getPrincipal());
                     SecurityContextHolder.getContext().setAuthentication(authentication);
@@ -43,5 +48,9 @@ public class RefreshAuthenticationFilter extends OncePerRequestFilter {
             }
         }
         filterChain.doFilter(request, response);
+    }
+
+    private boolean isTokenInBlackList(String token) {
+        return refreshTokenBlackListRepository.existsByToken(token);
     }
 }

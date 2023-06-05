@@ -40,8 +40,8 @@ public class UserDetailsServiceImplTest {
         assertThat(userDetails).isNotNull();
         assertThat(userDetails).isInstanceOf(AppUserDetails.class);
         AppUserDetails appUserDetails = (AppUserDetails)userDetails;
-        assertThat(appUserDetails.getCoreUser()).isNotNull();
-        assertThat(appUserDetails.getCoreUser().getRole()).isEqualTo(Role.SUBMITTER);
+        assertThat(appUserDetails.getSafeguardUser()).isNotNull();
+        assertThat(appUserDetails.getSafeguardUser().getRole()).isEqualTo(Role.SUBMITTER);
     }
 
     @Test

@@ -1,5 +1,6 @@
 package com.dqtri.mango.safeguard.config;
 
+import com.dqtri.mango.safeguard.repository.RefreshTokenBlackListRepository;
 import com.dqtri.mango.safeguard.security.access.AccessAuthenticationFilter;
 import com.dqtri.mango.safeguard.security.CustomUnauthorizedEntryPoint;
 import com.dqtri.mango.safeguard.security.refresh.RefreshAuthenticationFilter;
@@ -10,12 +11,11 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
-import org.springframework.security.config.annotation.authentication.configuration.EnableGlobalAuthentication;
-import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -32,15 +32,15 @@ import java.util.List;
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity(prePostEnabled = true)
-@EnableGlobalAuthentication
-@EnableGlobalMethodSecurity(prePostEnabled = true)
+@EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
     private final AuthenticationProvider refreshAuthenticationProvider;
     private final AuthenticationProvider accessAuthenticationProvider;
     private final UserDetailsService userDetailsService;
+
+    private final RefreshTokenBlackListRepository refreshTokenBlackListRepository;
 
     @Bean
     public SecurityFilterChain authorizeFilterChain(HttpSecurity http) throws Exception {
@@ -56,7 +56,7 @@ public class SecurityConfig {
 //                .anonymous().disable()
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-//                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .anonymous(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(requests -> requests
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
@@ -111,7 +111,7 @@ public class SecurityConfig {
 
     public Filter refreshAuthenticationFilter(HttpSecurity http) throws Exception {
         AuthenticationManager authenticationManager = authenticationManager(http);
-        return new RefreshAuthenticationFilter(authenticationManager);
+        return new RefreshAuthenticationFilter(authenticationManager, refreshTokenBlackListRepository);
     }
 
     @Bean

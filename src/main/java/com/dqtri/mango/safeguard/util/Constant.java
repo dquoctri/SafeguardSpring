@@ -19,7 +19,8 @@ public class Constant {
     }
 
     public static boolean isRefreshRequest(HttpServletRequest request) {
-        return "/auth/refresh".equals(request.getServletPath());
+        return "/auth/refresh".equals(request.getServletPath())
+                || "/auth/logout".equals(request.getServletPath());
     }
 
     public static String getAuthorizationToken(HttpServletRequest request) {

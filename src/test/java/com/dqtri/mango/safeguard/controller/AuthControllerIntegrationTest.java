@@ -7,7 +7,7 @@ package com.dqtri.mango.safeguard.controller;
 
 
 import com.dqtri.mango.safeguard.config.SecurityConfig;
-import com.dqtri.mango.safeguard.model.CoreUser;
+import com.dqtri.mango.safeguard.model.SafeguardUser;
 import com.dqtri.mango.safeguard.model.dto.payload.LoginPayload;
 import com.dqtri.mango.safeguard.model.dto.payload.RegisterPayload;
 import com.dqtri.mango.safeguard.model.dto.response.AuthenticationResponse;
@@ -77,7 +77,7 @@ public class AuthControllerIntegrationTest extends AbstractIntegrationTest {
         private static final String REGISTER_ROUTE = "/auth/register";
 
         @Captor
-        ArgumentCaptor<CoreUser> userArgumentCaptor;
+        ArgumentCaptor<SafeguardUser> userArgumentCaptor;
 
         @BeforeEach
         public void setup() {
@@ -89,9 +89,9 @@ public class AuthControllerIntegrationTest extends AbstractIntegrationTest {
             RegisterPayload registerPayload = createRegisterPayload();
             assertOk(registerPayload);
             verify(userRepository).save(userArgumentCaptor.capture());
-            CoreUser value = userArgumentCaptor.getValue();
+            SafeguardUser value = userArgumentCaptor.getValue();
             assertThat(value.getRole()).isEqualTo(Role.SUBMITTER);
-            verify(userRepository).save(createCoreUser());
+            verify(userRepository).save(createSafeguardUser());
         }
 
         @Test
@@ -162,12 +162,12 @@ public class AuthControllerIntegrationTest extends AbstractIntegrationTest {
             return registerPayload;
         }
 
-        private CoreUser createCoreUser() {
-            CoreUser coreUser = new CoreUser();
-            coreUser.setEmail("newcomer@mango.dqtri.com");
-            coreUser.setPassword(passwordEncoder.encode("newcomer"));
-            coreUser.setRole(Role.SUBMITTER);
-            return coreUser;
+        private SafeguardUser createSafeguardUser() {
+            SafeguardUser safeguardUser = new SafeguardUser();
+            safeguardUser.setEmail("newcomer@mango.dqtri.com");
+            safeguardUser.setPassword(passwordEncoder.encode("newcomer"));
+            safeguardUser.setRole(Role.SUBMITTER);
+            return safeguardUser;
         }
     }
 
