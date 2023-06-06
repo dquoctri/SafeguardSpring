@@ -7,7 +7,6 @@ package com.dqtri.mango.safeguard.controller;
 
 
 import com.dqtri.mango.safeguard.config.SecurityConfig;
-import com.dqtri.mango.safeguard.common.WithMockBasicUserDetails;
 import com.dqtri.mango.safeguard.model.SafeguardUser;
 import com.dqtri.mango.safeguard.model.dto.payload.LoginPayload;
 import com.dqtri.mango.safeguard.model.dto.payload.RegisterPayload;
@@ -15,7 +14,7 @@ import com.dqtri.mango.safeguard.model.dto.response.AuthenticationResponse;
 import com.dqtri.mango.safeguard.model.dto.response.ErrorResponse;
 import com.dqtri.mango.safeguard.model.dto.response.RefreshResponse;
 import com.dqtri.mango.safeguard.model.enums.Role;
-import com.dqtri.mango.safeguard.repository.RefreshTokenBlackListRepository;
+import com.dqtri.mango.safeguard.repository.BlackListRefreshTokenRepository;
 import com.dqtri.mango.safeguard.repository.UserRepository;
 import com.dqtri.mango.safeguard.security.TokenProvider;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -40,6 +39,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.security.test.context.support.WithUserDetails;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
@@ -47,7 +47,6 @@ import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -70,11 +69,12 @@ public class AuthControllerIntegrationTest extends AbstractIntegrationTest {
     private AuthenticationManager authenticationManager;
     @MockBean
     private TokenProvider tokenProvider;
+
     @MockBean
     private UserRepository userRepository;
 
     @MockBean
-    private RefreshTokenBlackListRepository refreshTokenBlackListRepository;
+    private BlackListRefreshTokenRepository blackListRefreshTokenRepository;
 
     @BeforeEach
     public void setup() {
@@ -372,26 +372,28 @@ public class AuthControllerIntegrationTest extends AbstractIntegrationTest {
         public void setup() {
             headers = new HttpHeaders();
             headers.add(HttpHeaders.AUTHORIZATION, "mock_token");
+//            userDetailsService.loadUserByUsername()
         }
 
         @Test
-        @WithMockBasicUserDetails(roles = "REFRESH")
+        @WithUserDetails(value = "email@dqtri.com")
+//        @WithMockBasicUser(roles = "REFRESH")
         void logoutToken_mockRefreshRoleCredentials_thenSuccess() throws Exception {
             mvc.perform(delete(LOGOUT_ROUTE).headers(headers)).andExpect(status().isNoContent());
-            verify(refreshTokenBlackListRepository, times(1)).save(any());
+            verify(blackListRefreshTokenRepository, times(1)).save(any());
         }
 
         @Test
-        @WithMockBasicUserDetails(authorities = "REFRESH")
+        @WithMockUser(authorities = "REFRESH")
         void logoutToken_mockRefreshAuthorityCredentials_thenSuccess() throws Exception {
             mvc.perform(delete(LOGOUT_ROUTE).headers(headers)).andExpect(status().isNoContent());
-            verify(refreshTokenBlackListRepository, times(1)).save(any());
+            verify(blackListRefreshTokenRepository, times(1)).save(any());
         }
 
         @Test
         void logout_givenNothing_thenUnauthorized() throws Exception {
             mvc.perform(delete(LOGOUT_ROUTE).headers(headers)).andExpect(status().isUnauthorized());
-            verify(refreshTokenBlackListRepository, never()).save(any());
+            verify(blackListRefreshTokenRepository, never()).save(any());
         }
 
         @Test

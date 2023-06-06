@@ -19,11 +19,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class WithMockBasicUserDetailsSecurityContextFactory implements WithSecurityContextFactory<WithMockBasicUserDetails> {
+public class WithMockBasicUserSecurityContextFactory implements WithSecurityContextFactory<WithMockBasicUser> {
     private SecurityContextHolderStrategy securityContextHolderStrategy = SecurityContextHolder
             .getContextHolderStrategy();
     @Override
-    public SecurityContext createSecurityContext(WithMockBasicUserDetails customUser) {
+    public SecurityContext createSecurityContext(WithMockBasicUser customUser) {
         String email = StringUtils.hasLength(customUser.email()) ? customUser.email() : customUser.value();
         Assert.notNull(email, () -> customUser + " cannot have null username on both username and value properties");
         List<GrantedAuthority> grantedAuthorities = new ArrayList<>();
@@ -43,7 +43,7 @@ public class WithMockBasicUserDetailsSecurityContextFactory implements WithSecur
         SafeguardUser safeguardUser = new SafeguardUser();
         safeguardUser.setEmail(email);
         safeguardUser.setPassword(customUser.password());
-        safeguardUser.setRole(Role.SUBMITTER); //todo
+        safeguardUser.setRole(Role.NONE); //we only mock authorities for testing
         BasicUserDetails basicUserDetails = new BasicUserDetails(safeguardUser);
         Authentication authentication = UsernamePasswordAuthenticationToken.authenticated(basicUserDetails,
                 safeguardUser.getPassword(), grantedAuthorities);

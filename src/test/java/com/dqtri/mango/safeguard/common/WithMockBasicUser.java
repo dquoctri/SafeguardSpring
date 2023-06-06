@@ -15,8 +15,8 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Inherited
 @Documented
-@WithSecurityContext(factory = WithMockBasicUserDetailsSecurityContextFactory.class)
-public @interface WithMockBasicUserDetails {
+@WithSecurityContext(factory = WithMockBasicUserSecurityContextFactory.class)
+public @interface WithMockBasicUser {
     String value() default "user";
     String email() default "";
     String[] roles() default { "USER" };

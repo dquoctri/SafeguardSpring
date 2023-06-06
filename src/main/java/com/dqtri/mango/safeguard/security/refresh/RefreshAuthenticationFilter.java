@@ -1,7 +1,6 @@
 package com.dqtri.mango.safeguard.security.refresh;
 
-import com.dqtri.mango.safeguard.model.RefreshTokenBlackList;
-import com.dqtri.mango.safeguard.repository.RefreshTokenBlackListRepository;
+import com.dqtri.mango.safeguard.repository.BlackListRefreshTokenRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -16,7 +15,6 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Optional;
 
 import static com.dqtri.mango.safeguard.util.Constant.getAuthorizationToken;
 import static com.dqtri.mango.safeguard.util.Constant.isPreflightRequest;
@@ -28,7 +26,7 @@ import static com.dqtri.mango.safeguard.util.Constant.validateToken;
 public class RefreshAuthenticationFilter extends OncePerRequestFilter {
     private final AuthenticationManager authenticationManager;
 
-    private final RefreshTokenBlackListRepository refreshTokenBlackListRepository;
+    private final BlackListRefreshTokenRepository blackListRefreshTokenRepository;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws IOException, ServletException {
@@ -51,6 +49,6 @@ public class RefreshAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private boolean isTokenInBlackList(String token) {
-        return refreshTokenBlackListRepository.existsByToken(token);
+        return blackListRefreshTokenRepository.existsByToken(token);
     }
 }

@@ -1,6 +1,6 @@
 package com.dqtri.mango.safeguard.config;
 
-import com.dqtri.mango.safeguard.repository.RefreshTokenBlackListRepository;
+import com.dqtri.mango.safeguard.repository.BlackListRefreshTokenRepository;
 import com.dqtri.mango.safeguard.security.access.AccessAuthenticationFilter;
 import com.dqtri.mango.safeguard.security.CustomUnauthorizedEntryPoint;
 import com.dqtri.mango.safeguard.security.refresh.RefreshAuthenticationFilter;
@@ -40,7 +40,7 @@ public class SecurityConfig {
     private final AuthenticationProvider accessAuthenticationProvider;
     private final UserDetailsService userDetailsService;
 
-    private final RefreshTokenBlackListRepository refreshTokenBlackListRepository;
+    private final BlackListRefreshTokenRepository blackListRefreshTokenRepository;
 
     @Bean
     public SecurityFilterChain authorizeFilterChain(HttpSecurity http) throws Exception {
@@ -111,7 +111,7 @@ public class SecurityConfig {
 
     public Filter refreshAuthenticationFilter(HttpSecurity http) throws Exception {
         AuthenticationManager authenticationManager = authenticationManager(http);
-        return new RefreshAuthenticationFilter(authenticationManager, refreshTokenBlackListRepository);
+        return new RefreshAuthenticationFilter(authenticationManager, blackListRefreshTokenRepository);
     }
 
     @Bean

@@ -6,7 +6,7 @@
 package com.dqtri.mango.safeguard.controller;
 
 import com.dqtri.mango.safeguard.exception.ConflictException;
-import com.dqtri.mango.safeguard.model.RefreshTokenBlackList;
+import com.dqtri.mango.safeguard.model.BlackListRefreshToken;
 import com.dqtri.mango.safeguard.model.SafeguardUser;
 import com.dqtri.mango.safeguard.model.dto.payload.LoginPayload;
 import com.dqtri.mango.safeguard.model.dto.payload.RegisterPayload;
@@ -14,7 +14,7 @@ import com.dqtri.mango.safeguard.model.dto.response.AuthenticationResponse;
 import com.dqtri.mango.safeguard.model.dto.response.ErrorResponse;
 import com.dqtri.mango.safeguard.model.dto.response.RefreshResponse;
 import com.dqtri.mango.safeguard.model.enums.Role;
-import com.dqtri.mango.safeguard.repository.RefreshTokenBlackListRepository;
+import com.dqtri.mango.safeguard.repository.BlackListRefreshTokenRepository;
 import com.dqtri.mango.safeguard.repository.UserRepository;
 import com.dqtri.mango.safeguard.security.BasicUserDetails;
 import com.dqtri.mango.safeguard.security.TokenProvider;
@@ -41,6 +41,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -66,7 +67,7 @@ public class AuthController {
     private final TokenProvider accessTokenProvider;
     private final UserRepository userRepository;
 
-    private final RefreshTokenBlackListRepository refreshTokenBlackListRepository;
+    private final BlackListRefreshTokenRepository blackListRefreshTokenRepository;
 
     @Value("${safeguard.auth.refresh.expirationInMs}")
     private long refreshExpirationInMs;
@@ -156,20 +157,20 @@ public class AuthController {
     @SecurityRequirement(name = "refresh_token")
     @DeleteMapping("logout")
     @PreAuthorize("hasAuthority('REFRESH') or hasRole('REFRESH')")
-    public ResponseEntity<Void> logout(@UserPrincipal BasicUserDetails currentUser,
-                                    @RequestHeader(HttpHeaders.AUTHORIZATION) @Schema(hidden = true) String refreshToken) {
-        RefreshTokenBlackList refreshTokenBlackList = createRTBlackList(currentUser.getUsername(), refreshToken);
-        refreshTokenBlackListRepository.save(refreshTokenBlackList);
+    public ResponseEntity<Void> logout(@UserPrincipal UserDetails currentUser,
+                                       @RequestHeader(HttpHeaders.AUTHORIZATION) @Schema(hidden = true) String refreshToken) {
+        BlackListRefreshToken blackListRefreshToken = createRTBlackList(currentUser.getUsername(), refreshToken);
+        blackListRefreshTokenRepository.save(blackListRefreshToken);
         return ResponseEntity.noContent().build();
     }
 
-    private RefreshTokenBlackList createRTBlackList(String email, String refreshToken){
-        RefreshTokenBlackList refreshTokenBlackList = new RefreshTokenBlackList();
-        refreshTokenBlackList.setEmail(email);
-        refreshTokenBlackList.setToken(refreshToken);
+    private BlackListRefreshToken createRTBlackList(String email, String refreshToken){
+        BlackListRefreshToken blackListRefreshToken = new BlackListRefreshToken();
+        blackListRefreshToken.setEmail(email);
+        blackListRefreshToken.setToken(refreshToken);
         Instant expirationDate = new Date().toInstant().plus(refreshExpirationInMs, ChronoUnit.MILLIS);
-        refreshTokenBlackList.setExpirationDate(expirationDate);
-        return refreshTokenBlackList;
+        blackListRefreshToken.setExpirationDate(expirationDate);
+        return blackListRefreshToken;
     }
 
     @Hidden

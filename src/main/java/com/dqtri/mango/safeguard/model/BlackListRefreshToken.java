@@ -14,7 +14,7 @@ import java.time.Instant;
 @Entity
 @EqualsAndHashCode(callSuper = false, exclude = "expirationDate")
 @Table(name = "refresh_token_black_list")
-public class RefreshTokenBlackList extends BaseEntity {
+public class BlackListRefreshToken extends BaseEntity {
     @Column(name = "email", length = 320, nullable = false)
     private String email;
     @Column(name = "token",nullable = false, unique = true)
