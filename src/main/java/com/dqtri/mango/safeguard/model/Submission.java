@@ -24,6 +24,7 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.util.Date;
+import java.util.Objects;
 
 @Entity
 @EntityListeners(AuditingEntityListener.class)
@@ -31,8 +32,8 @@ import java.util.Date;
 @Getter
 public class Submission extends BaseEntity {
 
-    @Column(name = "subject", length = 255)
-    private String subject;
+    @Column(name = "content", length = 152)
+    private String content;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
@@ -66,4 +67,30 @@ public class Submission extends BaseEntity {
     @Column(name = "updated_at", nullable = false)
     @LastModifiedDate
     private Date updatedAt;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+
+        Submission that = (Submission) o;
+
+        if (!content.equals(that.content)) return false;
+        if (status != that.status) return false;
+        if (!submitter.equals(that.submitter)) return false;
+        if (!Objects.equals(assignedUser, that.assignedUser)) return false;
+        return Objects.equals(comment, that.comment);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + content.hashCode();
+        result = 31 * result + status.hashCode();
+        result = 31 * result + submitter.hashCode();
+        result = 31 * result + (assignedUser != null ? assignedUser.hashCode() : 0);
+        result = 31 * result + (comment != null ? comment.hashCode() : 0);
+        return result;
+    }
 }

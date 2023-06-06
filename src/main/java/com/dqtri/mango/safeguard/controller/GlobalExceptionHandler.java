@@ -6,6 +6,7 @@
 package com.dqtri.mango.safeguard.controller;
 
 import com.dqtri.mango.safeguard.exception.ConflictException;
+import com.dqtri.mango.safeguard.exception.LoginFailedException;
 import com.dqtri.mango.safeguard.model.dto.response.ErrorResponse;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
@@ -58,6 +59,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public ResponseEntity<ErrorResponse> handleIllegalArgumentException(EntityNotFoundException e) {
         return handleException(e, HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(LoginFailedException.class)
+    @ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY)
+    public ResponseEntity<ErrorResponse> handleLoginFailedException(LoginFailedException e) {
+        return handleException(e, HttpStatus.UNPROCESSABLE_ENTITY);
     }
 
     @ExceptionHandler(Exception.class)

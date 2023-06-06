@@ -13,12 +13,15 @@ import java.time.Instant;
 @Getter
 @Entity
 @EqualsAndHashCode(callSuper = false, exclude = "expirationDate")
-@Table(name = "refresh_token_black_list")
+@Table(name = "black_list_refresh_token")
 public class BlackListRefreshToken extends BaseEntity {
+
     @Column(name = "email", length = 320, nullable = false)
     private String email;
+
     @Column(name = "token",nullable = false, unique = true)
     private String token;
+
     @Column(name = "expiration_date", nullable = false)
     private Instant expirationDate;
 }

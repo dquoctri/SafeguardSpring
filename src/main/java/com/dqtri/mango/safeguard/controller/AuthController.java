@@ -6,7 +6,9 @@
 package com.dqtri.mango.safeguard.controller;
 
 import com.dqtri.mango.safeguard.exception.ConflictException;
+import com.dqtri.mango.safeguard.exception.LoginFailedException;
 import com.dqtri.mango.safeguard.model.BlackListRefreshToken;
+import com.dqtri.mango.safeguard.model.LoginAttempt;
 import com.dqtri.mango.safeguard.model.SafeguardUser;
 import com.dqtri.mango.safeguard.model.dto.payload.LoginPayload;
 import com.dqtri.mango.safeguard.model.dto.payload.RegisterPayload;
@@ -15,8 +17,8 @@ import com.dqtri.mango.safeguard.model.dto.response.ErrorResponse;
 import com.dqtri.mango.safeguard.model.dto.response.RefreshResponse;
 import com.dqtri.mango.safeguard.model.enums.Role;
 import com.dqtri.mango.safeguard.repository.BlackListRefreshTokenRepository;
+import com.dqtri.mango.safeguard.repository.LoginAttemptRepository;
 import com.dqtri.mango.safeguard.repository.UserRepository;
-import com.dqtri.mango.safeguard.security.BasicUserDetails;
 import com.dqtri.mango.safeguard.security.TokenProvider;
 import com.dqtri.mango.safeguard.security.UserPrincipal;
 import io.swagger.v3.oas.annotations.Hidden;
@@ -54,6 +56,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/auth")
@@ -66,8 +69,8 @@ public class AuthController {
     private final TokenProvider refreshTokenProvider;
     private final TokenProvider accessTokenProvider;
     private final UserRepository userRepository;
-
     private final BlackListRefreshTokenRepository blackListRefreshTokenRepository;
+    private final LoginAttemptRepository loginAttemptRepository;
 
     @Value("${safeguard.auth.refresh.expirationInMs}")
     private long refreshExpirationInMs;
@@ -87,7 +90,13 @@ public class AuthController {
         checkConflictUserEmail(register.getEmail());
         SafeguardUser safeguardUser = createCoreUser(register);
         SafeguardUser saved = userRepository.save(safeguardUser);
+        cleanLoginAttempt(register.getEmail());
         return ResponseEntity.ok(saved);
+    }
+
+    private void cleanLoginAttempt(String email){
+        Optional<LoginAttempt> byEmail = loginAttemptRepository.findByEmail(email);
+        byEmail.ifPresent(loginAttemptRepository::delete);
     }
 
     private void checkConflictUserEmail(String email) {
@@ -115,18 +124,32 @@ public class AuthController {
             @ApiResponse(responseCode = "401", description = "Invalid email or password credentials",
                     content = {@Content(mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponse.class))}),
+            @ApiResponse(responseCode = "422", description = "Failed login more than 5 times",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class))}),
     })
     @PostMapping(value = "/login",
             consumes = {MediaType.APPLICATION_JSON_VALUE},
             produces = {MediaType.APPLICATION_JSON_VALUE})
     public ResponseEntity<AuthenticationResponse> login(@RequestBody @Valid LoginPayload login) {
+        LoginAttempt loginAttempt = tryLoginAttempt(login.getEmail());
         var authenticationToken = new UsernamePasswordAuthenticationToken(login.getEmail(), login.getPassword());
         Authentication authentication = authenticationManager.authenticate(authenticationToken);
-
         SecurityContextHolder.getContext().setAuthentication(authentication);
+        //create tokens
         String refreshToken = refreshTokenProvider.generateToken(authentication);
         String accessToken = accessTokenProvider.generateToken(authentication);
+        loginAttemptRepository.delete(loginAttempt);
         return ResponseEntity.ok(new AuthenticationResponse(refreshToken, accessToken));
+    }
+
+    private LoginAttempt tryLoginAttempt(String email) {
+        LoginAttempt loginAttempt = loginAttemptRepository.findByEmail(email).orElse(new LoginAttempt(email));
+        if (loginAttempt.isLockout()) {
+            throw new LoginFailedException("Your account has been locked due to multiple failed login attempts");
+        }
+        loginAttempt.setFailedAttempts(loginAttempt.getFailedAttempts() + 1);
+        return loginAttemptRepository.save(loginAttempt);
     }
 
     @Operation(summary = "Generates a new access token")
@@ -164,7 +187,7 @@ public class AuthController {
         return ResponseEntity.noContent().build();
     }
 
-    private BlackListRefreshToken createRTBlackList(String email, String refreshToken){
+    private BlackListRefreshToken createRTBlackList(String email, String refreshToken) {
         BlackListRefreshToken blackListRefreshToken = new BlackListRefreshToken();
         blackListRefreshToken.setEmail(email);
         blackListRefreshToken.setToken(refreshToken);

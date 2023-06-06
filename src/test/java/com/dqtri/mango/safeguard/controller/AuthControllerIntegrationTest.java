@@ -7,6 +7,7 @@ package com.dqtri.mango.safeguard.controller;
 
 
 import com.dqtri.mango.safeguard.config.SecurityConfig;
+import com.dqtri.mango.safeguard.model.LoginAttempt;
 import com.dqtri.mango.safeguard.model.SafeguardUser;
 import com.dqtri.mango.safeguard.model.dto.payload.LoginPayload;
 import com.dqtri.mango.safeguard.model.dto.payload.RegisterPayload;
@@ -15,7 +16,9 @@ import com.dqtri.mango.safeguard.model.dto.response.ErrorResponse;
 import com.dqtri.mango.safeguard.model.dto.response.RefreshResponse;
 import com.dqtri.mango.safeguard.model.enums.Role;
 import com.dqtri.mango.safeguard.repository.BlackListRefreshTokenRepository;
+import com.dqtri.mango.safeguard.repository.LoginAttemptRepository;
 import com.dqtri.mango.safeguard.repository.UserRepository;
+import com.dqtri.mango.safeguard.security.BasicUserDetails;
 import com.dqtri.mango.safeguard.security.TokenProvider;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,10 +42,12 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.security.test.context.support.WithUserDetails;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.ResultMatcher;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
+
+import java.util.Optional;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -76,6 +81,9 @@ public class AuthControllerIntegrationTest extends AbstractIntegrationTest {
     @MockBean
     private BlackListRefreshTokenRepository blackListRefreshTokenRepository;
 
+    @MockBean
+    private LoginAttemptRepository loginAttemptRepository;
+
     @BeforeEach
     public void setup() {
         passwordEncoder = new BCryptPasswordEncoder();
@@ -95,18 +103,40 @@ public class AuthControllerIntegrationTest extends AbstractIntegrationTest {
 
         @Test
         void register_givenUserCredentials_thenSuccess() throws Exception {
+            when(loginAttemptRepository.findByEmail(anyString())).thenReturn(Optional.empty());
             RegisterPayload registerPayload = createRegisterPayload();
-            assertOk(registerPayload);
+            //then
+            performRegisterRequest(registerPayload, status().isOk());
+            //test
             verify(userRepository).save(userArgumentCaptor.capture());
             SafeguardUser value = userArgumentCaptor.getValue();
             assertThat(value.getRole()).isEqualTo(Role.SUBMITTER);
             verify(userRepository).save(createSafeguardUser());
+            verify(loginAttemptRepository, never()).save(any());
+        }
+
+        @Test
+        void register_givenExistedLoginAttempt_thenSuccess() throws Exception {
+            RegisterPayload registerPayload = createRegisterPayload();
+            when(loginAttemptRepository.findByEmail(anyString()))
+                    .thenReturn(Optional.of(new LoginAttempt(registerPayload.getEmail())));
+            //then
+            performRegisterRequest(registerPayload, status().isOk());
+            //test
+            verify(userRepository).save(userArgumentCaptor.capture());
+            SafeguardUser value = userArgumentCaptor.getValue();
+            assertThat(value.getRole()).isEqualTo(Role.SUBMITTER);
+            verify(userRepository).save(createSafeguardUser());
+            verify(loginAttemptRepository, times(1)).delete(any());
         }
 
         @Test
         void register_givenEmptyPayload_thenBadRequest() throws Exception {
             RegisterPayload registerPayload = new RegisterPayload();
-            assertBadRequest(registerPayload);
+            //then
+            performRegisterRequest(registerPayload, status().isBadRequest());
+            //test
+            verify(userRepository, never()).save(userArgumentCaptor.capture());
         }
 
         @ParameterizedTest
@@ -116,7 +146,9 @@ public class AuthControllerIntegrationTest extends AbstractIntegrationTest {
             registerPayload.setEmail(invalidEmail);
             registerPayload.setPassword("mango");
             //then
-            assertBadRequest(registerPayload);
+            performRegisterRequest(registerPayload, status().isBadRequest());
+            //test
+            verify(userRepository, never()).save(userArgumentCaptor.capture());
         }
 
         @Test
@@ -124,7 +156,9 @@ public class AuthControllerIntegrationTest extends AbstractIntegrationTest {
             RegisterPayload registerPayload = new RegisterPayload();
             registerPayload.setEmail("newcomer@mango.dqtri.com");
             //then
-            assertBadRequest(registerPayload);
+            performRegisterRequest(registerPayload, status().isBadRequest());
+            //test
+            verify(userRepository, never()).save(userArgumentCaptor.capture());
         }
 
         @ParameterizedTest
@@ -134,7 +168,9 @@ public class AuthControllerIntegrationTest extends AbstractIntegrationTest {
             registerPayload.setEmail("newcomer@mango.dqtri.com");
             registerPayload.setPassword(password);
             //then
-            assertBadRequest(registerPayload);
+            performRegisterRequest(registerPayload, status().isBadRequest());
+            //test
+            verify(userRepository, never()).save(userArgumentCaptor.capture());
         }
 
 
@@ -142,25 +178,9 @@ public class AuthControllerIntegrationTest extends AbstractIntegrationTest {
         void register_mockExitedEmail_thenThrowConflictException() throws Exception {
             RegisterPayload registerPayload = createRegisterPayload();
             when(userRepository.existsByEmail(anyString())).thenReturn(true);
-            mvc.perform(post(REGISTER_ROUTE)
-                            .contentType(MediaType.APPLICATION_JSON_VALUE)
-                            .content(createPayloadJson(registerPayload)))
-                    .andExpect(status().isConflict());
-            verify(userRepository, never()).save(userArgumentCaptor.capture());
-        }
-
-        private void assertOk(RegisterPayload registerPayload) throws Exception {
-            mvc.perform(post(REGISTER_ROUTE)
-                            .contentType(MediaType.APPLICATION_JSON_VALUE)
-                            .content(createPayloadJson(registerPayload)))
-                    .andExpect(status().isOk());
-        }
-
-        private void assertBadRequest(RegisterPayload registerPayload) throws Exception {
-            mvc.perform(post(REGISTER_ROUTE)
-                            .contentType(MediaType.APPLICATION_JSON_VALUE)
-                            .content(createPayloadJson(registerPayload)))
-                    .andExpect(status().isBadRequest());
+            //then
+            performRegisterRequest(registerPayload, status().isConflict());
+            //test
             verify(userRepository, never()).save(userArgumentCaptor.capture());
         }
 
@@ -178,6 +198,13 @@ public class AuthControllerIntegrationTest extends AbstractIntegrationTest {
             safeguardUser.setRole(Role.SUBMITTER);
             return safeguardUser;
         }
+
+        private void performRegisterRequest(RegisterPayload registerPayload, ResultMatcher... matchers) throws Exception {
+            mvc.perform(post(REGISTER_ROUTE)
+                            .contentType(MediaType.APPLICATION_JSON_VALUE)
+                            .content(createPayloadJson(registerPayload)))
+                    .andExpectAll(matchers);
+        }
     }
 
     @Nested
@@ -187,12 +214,17 @@ public class AuthControllerIntegrationTest extends AbstractIntegrationTest {
         @Test
         void login_givenUserCredentials_thenSuccess() throws Exception {
             LoginPayload loginPayload = createLoginPayload();
-            var authentication = new UsernamePasswordAuthenticationToken(loginPayload.getEmail(), loginPayload.getPassword());
+            var authentication = new UsernamePasswordAuthenticationToken(loginPayload.getEmail(),
+                    loginPayload.getPassword());
             when(authenticationManager.authenticate(any())).thenReturn(authentication);
             when(tokenProvider.generateToken(any())).thenReturn("token_value");
             //then
-            AuthenticationResponse authenticationResponse = assertOk(loginPayload);
+            MvcResult mvcResult = performLoginRequest(loginPayload, status().isOk());
+            String json = mvcResult.getResponse().getContentAsString();
+            AuthenticationResponse authenticationResponse =
+                    new ObjectMapper().readValue(json, AuthenticationResponse.class);
             //test
+            verify(loginAttemptRepository, times(1)).delete(any());
             assertThat(authenticationResponse).isNotNull();
             assertThat(authenticationResponse.getRefreshToken()).isEqualTo("token_value");
             assertThat(authenticationResponse.getAccessToken()).isEqualTo("token_value");
@@ -201,7 +233,11 @@ public class AuthControllerIntegrationTest extends AbstractIntegrationTest {
         @Test
         void login_givenEmptyPayload_thenBadRequest() throws Exception {
             LoginPayload loginPayload = new LoginPayload();
-            assertBadRequest(loginPayload);
+            //then
+            performLoginRequest(loginPayload, status().isBadRequest());
+            //test
+            verifyNoInteractions(authenticationManager);
+            verifyNoInteractions(tokenProvider);
         }
 
         @ParameterizedTest
@@ -211,7 +247,10 @@ public class AuthControllerIntegrationTest extends AbstractIntegrationTest {
             loginPayload.setEmail(invalidEmail);
             loginPayload.setPassword("******");
             //then
-            assertBadRequest(loginPayload);
+            performLoginRequest(loginPayload, status().isBadRequest());
+            //test
+            verifyNoInteractions(authenticationManager);
+            verifyNoInteractions(tokenProvider);
         }
 
         @Test
@@ -219,7 +258,10 @@ public class AuthControllerIntegrationTest extends AbstractIntegrationTest {
             LoginPayload loginPayload = new LoginPayload();
             loginPayload.setEmail("submitter@mango.dqtri.com");
             //then
-            assertBadRequest(loginPayload);
+            performLoginRequest(loginPayload, status().isBadRequest());
+            //test
+            verifyNoInteractions(authenticationManager);
+            verifyNoInteractions(tokenProvider);
         }
 
         @ParameterizedTest
@@ -229,23 +271,62 @@ public class AuthControllerIntegrationTest extends AbstractIntegrationTest {
             loginPayload.setEmail("submitter@mango.dqtri.com");
             loginPayload.setPassword(password);
             //then
-            assertBadRequest(loginPayload);
+            performLoginRequest(loginPayload, status().isBadRequest());
+            //test
+            verifyNoInteractions(authenticationManager);
+            verifyNoInteractions(tokenProvider);
         }
 
         @Test
         void login_mockBadCredentials_thenUnauthorized() throws Exception {
             LoginPayload loginPayload = createLoginPayload();
             when(authenticationManager.authenticate(any())).thenThrow(new BadCredentialsException("Bad credentials"));
-            MvcResult mvcResult = mvc.perform(post(LOGIN_ROUTE)
-                            .contentType(MediaType.APPLICATION_JSON_VALUE)
-                            .content(createPayloadJson(loginPayload)))
-                    .andExpect(status().isUnauthorized())
-                    .andReturn();
+            //then
+            MvcResult mvcResult = performLoginRequest(loginPayload, status().isUnauthorized());
+            //test
             verifyNoInteractions(tokenProvider);
             String json = mvcResult.getResponse().getContentAsString();
             ErrorResponse errorResponse = new ObjectMapper().readValue(json, ErrorResponse.class);
             assertThat(errorResponse).isNotNull();
             assertThat(errorResponse.getMessage()).isEqualTo("Bad credentials");
+
+        }
+
+        @Test
+        void login_givenBadCredentialsAndMockNewLoginAttempt_thenUnauthorized() throws Exception {
+            LoginPayload loginPayload = createLoginPayload();
+            when(loginAttemptRepository.findByEmail(anyString()))
+                    .thenReturn(Optional.of(new LoginAttempt(loginPayload.getEmail())));
+            when(authenticationManager.authenticate(any())).thenThrow(new BadCredentialsException("Bad credentials"));
+            //then
+            MvcResult mvcResult = performLoginRequest(loginPayload, status().isUnauthorized());
+            //test
+            verifyNoInteractions(tokenProvider);
+            verify(loginAttemptRepository, never()).delete(any());
+            String json = mvcResult.getResponse().getContentAsString();
+            ErrorResponse errorResponse = new ObjectMapper().readValue(json, ErrorResponse.class);
+            assertThat(errorResponse).isNotNull();
+            assertThat(errorResponse.getMessage()).isEqualTo("Bad credentials");
+        }
+
+        @Test
+        void login_givenBadCredentialsAndMockLockedLoginAttempt_thenUnprocessableEntity() throws Exception {
+
+            LoginPayload loginPayload = createLoginPayload();
+            LoginAttempt loginAttempt = new LoginAttempt(loginPayload.getEmail());
+            loginAttempt.setLockout(true);
+            when(loginAttemptRepository.findByEmail(anyString())).thenReturn(Optional.of(loginAttempt));
+            //then
+            MvcResult mvcResult = performLoginRequest(loginPayload, status().isUnprocessableEntity());
+            //test
+            verifyNoInteractions(authenticationManager);
+            verifyNoInteractions(tokenProvider);
+            verify(loginAttemptRepository, never()).delete(any());
+            String json = mvcResult.getResponse().getContentAsString();
+            ErrorResponse errorResponse = new ObjectMapper().readValue(json, ErrorResponse.class);
+            assertThat(errorResponse).isNotNull();
+            assertThat(errorResponse.getMessage())
+                    .isEqualTo("Your account has been locked due to multiple failed login attempts");
         }
 
         private LoginPayload createLoginPayload() {
@@ -255,23 +336,12 @@ public class AuthControllerIntegrationTest extends AbstractIntegrationTest {
             return loginPayload;
         }
 
-        private AuthenticationResponse assertOk(LoginPayload registerPayload) throws Exception {
-            MvcResult mvcResult = mvc.perform(post(LOGIN_ROUTE)
+        private MvcResult performLoginRequest(LoginPayload loginPayload, ResultMatcher... matchers) throws Exception {
+            return mvc.perform(post(LOGIN_ROUTE)
                             .contentType(MediaType.APPLICATION_JSON_VALUE)
-                            .content(createPayloadJson(registerPayload)))
-                    .andExpect(status().isOk())
+                            .content(createPayloadJson(loginPayload)))
+                    .andExpectAll(matchers)
                     .andReturn();
-            String json = mvcResult.getResponse().getContentAsString();
-            return new ObjectMapper().readValue(json, AuthenticationResponse.class);
-        }
-
-        private void assertBadRequest(LoginPayload registerPayload) throws Exception {
-            mvc.perform(post(LOGIN_ROUTE)
-                            .contentType(MediaType.APPLICATION_JSON_VALUE)
-                            .content(createPayloadJson(registerPayload)))
-                    .andExpect(status().isBadRequest());
-            verifyNoInteractions(authenticationManager);
-            verifyNoInteractions(tokenProvider);
         }
     }
 
@@ -366,52 +436,90 @@ public class AuthControllerIntegrationTest extends AbstractIntegrationTest {
     @Nested
     class LogoutIntegrationTest {
         private static final String LOGOUT_ROUTE = "/auth/logout";
-        private HttpHeaders headers;
-
-        @BeforeEach
-        public void setup() {
-            headers = new HttpHeaders();
-            headers.add(HttpHeaders.AUTHORIZATION, "mock_token");
-//            userDetailsService.loadUserByUsername()
-        }
 
         @Test
-        @WithUserDetails(value = "email@dqtri.com")
-//        @WithMockBasicUser(roles = "REFRESH")
+        @WithMockUser(roles = "REFRESH")
         void logoutToken_mockRefreshRoleCredentials_thenSuccess() throws Exception {
-            mvc.perform(delete(LOGOUT_ROUTE).headers(headers)).andExpect(status().isNoContent());
+            performLogoutRequest(status().isNoContent());
             verify(blackListRefreshTokenRepository, times(1)).save(any());
         }
 
         @Test
         @WithMockUser(authorities = "REFRESH")
         void logoutToken_mockRefreshAuthorityCredentials_thenSuccess() throws Exception {
-            mvc.perform(delete(LOGOUT_ROUTE).headers(headers)).andExpect(status().isNoContent());
+            performLogoutRequest(status().isNoContent());
             verify(blackListRefreshTokenRepository, times(1)).save(any());
         }
 
         @Test
+        void logoutToken_givenBasicUserDetails_thenSuccess() throws Exception {
+            HttpHeaders headers = new HttpHeaders();
+            headers.add(HttpHeaders.AUTHORIZATION, "mock_token");
+            //then
+            mvc.perform(delete(LOGOUT_ROUTE).headers(headers).with(user(newBasicUserDetails())))
+                    .andExpectAll(status().isNoContent());
+            //test
+            verify(blackListRefreshTokenRepository, times(1)).save(any());
+        }
+
+        private BasicUserDetails newBasicUserDetails(){
+            SafeguardUser safeguardUser = new SafeguardUser();
+            safeguardUser.setEmail("safeguard@dqtri.com");
+            safeguardUser.setPassword("safeguard");
+            return new BasicUserDetails(safeguardUser);
+        }
+
+        @Test
         void logout_givenNothing_thenUnauthorized() throws Exception {
-            mvc.perform(delete(LOGOUT_ROUTE).headers(headers)).andExpect(status().isUnauthorized());
+            performLogoutRequest(status().isUnauthorized());
             verify(blackListRefreshTokenRepository, never()).save(any());
         }
 
         @Test
         @WithMockUser(roles = {"INVALID", "ADMIN", "SUBMITTER", "MANAGER", "SPECIALIST", "NONE"})
         void logout_mockAppRoles_thenForbidden() throws Exception {
-            HttpHeaders headers = new HttpHeaders();
-            headers.add(HttpHeaders.AUTHORIZATION, "mock_token");
-            mvc.perform(delete(LOGOUT_ROUTE).headers(headers)).andExpect(status().isForbidden());
+            performLogoutRequest(status().isForbidden());
             verify(tokenProvider, never()).generateToken(any());
         }
 
         @Test
         @WithMockUser(authorities = {"INVALID", "ADMIN", "SUBMITTER", "MANAGER", "SPECIALIST", "NONE"})
         void logout_mockAppAuthorities_thenForbidden() throws Exception {
+            performLogoutRequest(status().isForbidden());
+            verify(tokenProvider, never()).generateToken(any());
+        }
+
+        @Test
+        void logout_withAppRoles_thenForbidden() throws Exception {
+            RequestPostProcessor user = user("norefresh@dqtri.com").password("****")
+                    .roles("INVALID", "ADMIN", "SUBMITTER", "MANAGER", "SPECIALIST", "NONE");
+            performLogoutRequest(user, status().isForbidden());
+            verify(tokenProvider, never()).generateToken(any());
+        }
+
+        @Test
+        void logout_withAppAuthorities_thenForbidden() throws Exception {
+            var user = user("norefresh@dqtri.com").password("****")
+                    .authorities(new SimpleGrantedAuthority("INVALID"),
+                            new SimpleGrantedAuthority("ADMIN"),
+                            new SimpleGrantedAuthority("SUBMITTER"),
+                            new SimpleGrantedAuthority("MANAGER"),
+                            new SimpleGrantedAuthority("SPECIALIST"),
+                            new SimpleGrantedAuthority("NONE"));
+            performLogoutRequest(user, status().isForbidden());
+            verify(tokenProvider, never()).generateToken(any());
+        }
+
+        private void performLogoutRequest(RequestPostProcessor postProcessor, ResultMatcher... matchers) throws Exception {
             HttpHeaders headers = new HttpHeaders();
             headers.add(HttpHeaders.AUTHORIZATION, "mock_token");
-            mvc.perform(delete(LOGOUT_ROUTE).headers(headers)).andExpect(status().isForbidden());
-            verify(tokenProvider, never()).generateToken(any());
+            mvc.perform(delete(LOGOUT_ROUTE).headers(headers).with(postProcessor)).andExpectAll(matchers);
+        }
+
+        private void performLogoutRequest(ResultMatcher... matchers) throws Exception {
+            HttpHeaders headers = new HttpHeaders();
+            headers.add(HttpHeaders.AUTHORIZATION, "mock_token");
+            mvc.perform(delete(LOGOUT_ROUTE).headers(headers)).andExpectAll(matchers);
         }
     }
 }
