@@ -44,7 +44,7 @@ public class SubmissionController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successful retrieval a paginated list of submissions",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = Page.class))})
+                            schema = @Schema(implementation = Page.class, subTypes = Submission.class))})
     })
     @Transactional(readOnly = true)
     @GetMapping("/submissions")
@@ -65,7 +65,7 @@ public class SubmissionController {
     @Transactional(readOnly = true)
     @GetMapping("/submissions/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SPECIALIST', 'SUBMITTER')")
-    public ResponseEntity<?> getSubmission(@PathVariable("id") Long id) {
+    public ResponseEntity<Submission> getSubmission(@PathVariable("id") Long id) {
         Submission submission = getSubmissionOrElseThrow(id);
         return ResponseEntity.ok(submission);
     }
@@ -80,7 +80,7 @@ public class SubmissionController {
     @Transactional
     @PostMapping("/submissions")
     @PreAuthorize("hasAnyRole('ADMIN', 'SUBMITTER')")
-    public ResponseEntity<?> createSubmission(@RequestBody @Valid SubmissionPayload submissionPayload) {
+    public ResponseEntity<Submission> createSubmission(@RequestBody @Valid SubmissionPayload submissionPayload) {
         Submission submission = submissionPayload.toSubmission();
         Submission save = submissionRepository.save(submission);
         return ResponseEntity.ok(save);
@@ -97,10 +97,10 @@ public class SubmissionController {
     @Transactional
     @PutMapping("/submissions/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'SUBMITTER')")
-    public ResponseEntity<?> updateSubmission(@PathVariable("id") Long id,
+    public ResponseEntity<Submission> updateSubmission(@PathVariable("id") Long id,
                                               @RequestBody @Valid SubmissionPayload submissionPayload) {
         Submission submission = getSubmissionOrElseThrow(id);
-        submission.setSubject(submissionPayload.getSubject());
+        submission.setContent(submissionPayload.getContent());
         Submission saved = submissionRepository.save(submission);
         return ResponseEntity.ok(saved);
     }
@@ -113,7 +113,7 @@ public class SubmissionController {
     @Transactional
     @DeleteMapping("/submissions/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'SUBMITTER')")
-    public ResponseEntity<?> deleteSubmission(@PathVariable("id") Long id) {
+    public ResponseEntity<Submission> deleteSubmission(@PathVariable("id") Long id) {
         Submission submission = getSubmissionOrElseThrow(id);
         submissionRepository.delete(submission);
         return ResponseEntity.noContent().build();

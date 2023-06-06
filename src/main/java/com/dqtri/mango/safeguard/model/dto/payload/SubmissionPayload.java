@@ -9,16 +9,18 @@ import com.dqtri.mango.safeguard.model.Submission;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.validator.constraints.Length;
 
 @Setter
 @Getter
 public class SubmissionPayload {
     @NotBlank
-    private String subject;
+    @Length(max = 152)
+    private String content;
 
     public Submission toSubmission() {
         Submission submission = new Submission();
-        submission.setSubject(this.subject);
+        submission.setContent(this.content);
         return submission;
     }
 }

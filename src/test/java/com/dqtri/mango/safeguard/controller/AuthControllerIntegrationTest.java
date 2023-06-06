@@ -42,6 +42,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultMatcher;
@@ -74,16 +75,12 @@ public class AuthControllerIntegrationTest extends AbstractIntegrationTest {
     private AuthenticationManager authenticationManager;
     @MockBean
     private TokenProvider tokenProvider;
-
     @MockBean
     private UserRepository userRepository;
-
     @MockBean
     private BlackListRefreshTokenRepository blackListRefreshTokenRepository;
-
     @MockBean
     private LoginAttemptRepository loginAttemptRepository;
-
     @BeforeEach
     public void setup() {
         passwordEncoder = new BCryptPasswordEncoder();
@@ -357,7 +354,10 @@ public class AuthControllerIntegrationTest extends AbstractIntegrationTest {
         @Test
         @WithMockUser(roles = "REFRESH")
         void refreshToken_mockRefreshRoleCredentials_thenSuccess() throws Exception {
-            RefreshResponse refreshResponse = assertOK();
+            MvcResult mvcResult = performRefreshRequest(mockAdminUser(), status().isOk());
+            String json = mvcResult.getResponse().getContentAsString();
+            RefreshResponse refreshResponse = new ObjectMapper().readValue(json, RefreshResponse.class);
+            //test
             assertThat(refreshResponse).isNotNull();
             assertThat(refreshResponse.getAccessToken()).isEqualTo("token_value");
         }
@@ -365,71 +365,65 @@ public class AuthControllerIntegrationTest extends AbstractIntegrationTest {
         @Test
         @WithMockUser(authorities = "REFRESH")
         void refreshToken_mockRefreshAuthorityCredentials_thenSuccess() throws Exception {
-            RefreshResponse refreshResponse = assertOK();
+            MvcResult mvcResult = performRefreshRequest(mockAdminUser(), status().isOk());
+            String json = mvcResult.getResponse().getContentAsString();
+            RefreshResponse refreshResponse = new ObjectMapper().readValue(json, RefreshResponse.class);
             assertThat(refreshResponse).isNotNull();
             assertThat(refreshResponse.getAccessToken()).isEqualTo("token_value");
         }
 
         @Test
         void refreshToken_withRefreshRoleCredentials_thenSuccess() throws Exception {
-            MvcResult mvcResult = mvc.perform(get(REFRESH_ROUTE)
-                            .with(user("email").password("********").roles("REFRESH")))
-                    .andExpect(status().isOk())
-                    .andReturn();
+            RequestPostProcessor user = user("mango@dqtri.com").password("********").roles("REFRESH");
+            MvcResult mvcResult = performRefreshRequest(user, status().isOk());
             String json = mvcResult.getResponse().getContentAsString();
             RefreshResponse refreshResponse = new ObjectMapper().readValue(json, RefreshResponse.class);
+            //test
             assertThat(refreshResponse).isNotNull();
             assertThat(refreshResponse.getAccessToken()).isEqualTo("token_value");
         }
 
         @Test
         void refreshToken_withRefreshAuthorityCredentials_thenSuccess() throws Exception {
-            MvcResult mvcResult = mvc.perform(get(REFRESH_ROUTE)
-                            .with(user("email").password("********")
-                                    .authorities(new SimpleGrantedAuthority("REFRESH"))))
-                    .andExpect(status().isOk())
-                    .andReturn();
+            RequestPostProcessor user = user("mango@dqtri.com").password("********")
+                    .authorities(new SimpleGrantedAuthority("REFRESH"));
+            MvcResult mvcResult = performRefreshRequest(user, status().isOk());
             String json = mvcResult.getResponse().getContentAsString();
             RefreshResponse refreshResponse = new ObjectMapper().readValue(json, RefreshResponse.class);
+            //test
             assertThat(refreshResponse).isNotNull();
             assertThat(refreshResponse.getAccessToken()).isEqualTo("token_value");
         }
 
-        private RefreshResponse assertOK() throws Exception {
-            MvcResult mvcResult = mvc.perform(get(REFRESH_ROUTE))
-                    .andExpect(status().isOk())
-                    .andReturn();
-            String json = mvcResult.getResponse().getContentAsString();
-            return new ObjectMapper().readValue(json, RefreshResponse.class);
-        }
-
         @Test
         void refreshToken_withAppUser_thenForbidden() throws Exception {
-            assertForbidden(mockAdminUser());
-            assertForbidden(mockSubmitterUser());
-            assertForbidden(mockManagerUser());
-            assertForbidden(mockSpecialistUser());
-            assertForbidden(mockInactiveUser());
-        }
-
-        private void assertForbidden(RequestPostProcessor forbiddenProcessor) throws Exception {
-            mvc.perform(get(REFRESH_ROUTE).with(forbiddenProcessor))
-                    .andExpect(status().isForbidden());
-            verify(tokenProvider, never()).generateToken(any());
+            performRefreshRequest(mockAdminUser(), status().isForbidden());
+            performRefreshRequest(mockSubmitterUser(), status().isForbidden());
+            performRefreshRequest(mockManagerUser(), status().isForbidden());
+            performRefreshRequest(mockSpecialistUser(), status().isForbidden());
+            performRefreshRequest(mockInactiveUser(), status().isForbidden());
         }
 
         @Test
         @WithMockUser(roles = {"INVALID", "ADMIN", "SUBMITTER", "MANAGER", "SPECIALIST", "NONE"})
         void refreshToken_mockAppRoles_thenForbidden() throws Exception {
-            mvc.perform(get(REFRESH_ROUTE)).andExpect(status().isForbidden());
+            performRefreshRequest(status().isForbidden());
             verify(tokenProvider, never()).generateToken(any());
         }
 
         @Test
         @WithMockUser(authorities = {"INVALID", "ADMIN", "SUBMITTER", "MANAGER", "SPECIALIST", "NONE"})
         void refreshToken_mockAppAuthorities_thenForbidden() throws Exception {
-            mvc.perform(get(REFRESH_ROUTE)).andExpect(status().isForbidden());
+            performRefreshRequest(status().isForbidden());
             verify(tokenProvider, never()).generateToken(any());
+        }
+
+        private MvcResult performRefreshRequest(ResultMatcher... matchers) throws Exception {
+            return mvc.perform(get(REFRESH_ROUTE)).andExpectAll(matchers).andReturn();
+        }
+
+        private MvcResult performRefreshRequest(RequestPostProcessor forbiddenProcessor, ResultMatcher... matchers) throws Exception {
+            return mvc.perform(get(REFRESH_ROUTE).with(forbiddenProcessor)).andExpectAll(matchers).andReturn();
         }
     }
 
