@@ -1,11 +1,13 @@
 package com.dqtri.mango.safeguard.controller;
 
+import com.dqtri.mango.safeguard.annotation.GlobalApiResponses;
 import com.dqtri.mango.safeguard.exception.ConflictException;
 import com.dqtri.mango.safeguard.model.SafeguardUser;
 import com.dqtri.mango.safeguard.model.dto.PageCriteria;
 import com.dqtri.mango.safeguard.model.dto.payload.ResetPasswordPayload;
 import com.dqtri.mango.safeguard.model.dto.payload.UserCreatingPayload;
 import com.dqtri.mango.safeguard.model.dto.payload.UserUpdatingPayload;
+import com.dqtri.mango.safeguard.model.dto.response.ErrorResponse;
 import com.dqtri.mango.safeguard.model.enums.Role;
 import com.dqtri.mango.safeguard.repository.UserRepository;
 import com.dqtri.mango.safeguard.security.AppUserDetails;
@@ -25,6 +27,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -47,11 +50,19 @@ public class UserController {
     private final UserRepository userRepository;
 
     @Operation(summary = "Get users", description = "Retrieve a paginated list of users")
+
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successful retrieval a paginated list of users",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = Page.class))})
+                            schema = @Schema(implementation = Page.class))}),
+            @ApiResponse(responseCode = "400", description = "Invalid page criteria",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}),
+//            @ApiResponse(responseCode = "401", description = "Invalid email or password credentials",
+//                    content = {@Content(mediaType = "application/json",
+//                            schema = @Schema(implementation = ErrorResponse.class))}),
     })
+    @GlobalApiResponses(responseCode = "401", description = "Invalid email or password credentials")
     @Transactional(readOnly = true)
     @GetMapping("/users")
     @PreAuthorize("hasRole('ADMIN')")
@@ -121,8 +132,11 @@ public class UserController {
             @ApiResponse(responseCode = "200", description = "Successful update of user",
                     content = {@Content(mediaType = "application/json",
                             schema = @Schema(implementation = SafeguardUser.class))}),
+            @ApiResponse(responseCode = "400", description = "Invalid request payload"),
+            @ApiResponse(responseCode = "401", description = "Invalid email or password credentials",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class))}),
             @ApiResponse(responseCode = "404", description = "User not found"),
-            @ApiResponse(responseCode = "400", description = "Invalid request payload")
     })
     @PutMapping("/users/{userId}")
     @PreAuthorize("hasRole('ADMIN') and hasPermission('#userId', 'nonAdminResource')")
