@@ -42,7 +42,6 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultMatcher;
@@ -72,13 +71,9 @@ public class AuthControllerIntegrationTest extends AbstractIntegrationTest {
     @MockBean
     private PasswordEncoder passwordEncoder;
     @MockBean
-    private AuthenticationManager authenticationManager;
-    @MockBean
     private TokenProvider tokenProvider;
     @MockBean
     private UserRepository userRepository;
-    @MockBean
-    private BlackListRefreshTokenRepository blackListRefreshTokenRepository;
     @MockBean
     private LoginAttemptRepository loginAttemptRepository;
     @BeforeEach
@@ -354,7 +349,7 @@ public class AuthControllerIntegrationTest extends AbstractIntegrationTest {
         @Test
         @WithMockUser(roles = "REFRESH")
         void refreshToken_mockRefreshRoleCredentials_thenSuccess() throws Exception {
-            MvcResult mvcResult = performRefreshRequest(mockAdminUser(), status().isOk());
+            MvcResult mvcResult = performRefreshRequest(status().isOk());
             String json = mvcResult.getResponse().getContentAsString();
             RefreshResponse refreshResponse = new ObjectMapper().readValue(json, RefreshResponse.class);
             //test
@@ -365,7 +360,7 @@ public class AuthControllerIntegrationTest extends AbstractIntegrationTest {
         @Test
         @WithMockUser(authorities = "REFRESH")
         void refreshToken_mockRefreshAuthorityCredentials_thenSuccess() throws Exception {
-            MvcResult mvcResult = performRefreshRequest(mockAdminUser(), status().isOk());
+            MvcResult mvcResult = performRefreshRequest(status().isOk());
             String json = mvcResult.getResponse().getContentAsString();
             RefreshResponse refreshResponse = new ObjectMapper().readValue(json, RefreshResponse.class);
             assertThat(refreshResponse).isNotNull();

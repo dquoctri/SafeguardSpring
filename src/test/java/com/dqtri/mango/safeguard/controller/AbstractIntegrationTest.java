@@ -6,12 +6,14 @@
 package com.dqtri.mango.safeguard.controller;
 
 import com.dqtri.mango.safeguard.model.enums.Role;
+import com.dqtri.mango.safeguard.repository.BlackListRefreshTokenRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -24,10 +26,13 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 public abstract class AbstractIntegrationTest {
 
     @MockBean
-    private AuthenticationProvider authenticationProvider;
-
+    protected AuthenticationManager authenticationManager;
     @MockBean
-    private UserDetailsService userDetailsService;
+    protected AuthenticationProvider authenticationProvider;
+    @MockBean
+    protected UserDetailsService userDetailsService;
+    @MockBean
+    protected BlackListRefreshTokenRepository blackListRefreshTokenRepository;
 
     @Autowired
     protected MockMvc mvc;

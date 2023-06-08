@@ -1,6 +1,5 @@
 package com.dqtri.mango.safeguard.controller;
 
-import com.dqtri.mango.safeguard.annotation.GlobalApiResponses;
 import com.dqtri.mango.safeguard.exception.ConflictException;
 import com.dqtri.mango.safeguard.model.SafeguardUser;
 import com.dqtri.mango.safeguard.model.dto.PageCriteria;
@@ -50,7 +49,6 @@ public class UserController {
     private final UserRepository userRepository;
 
     @Operation(summary = "Get users", description = "Retrieve a paginated list of users")
-
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successful retrieval a paginated list of users",
                     content = {@Content(mediaType = "application/json",
@@ -58,11 +56,13 @@ public class UserController {
             @ApiResponse(responseCode = "400", description = "Invalid page criteria",
                     content = {@Content(mediaType = "application/json",
                             schema = @Schema(implementation = ProblemDetail.class))}),
-//            @ApiResponse(responseCode = "401", description = "Invalid email or password credentials",
-//                    content = {@Content(mediaType = "application/json",
-//                            schema = @Schema(implementation = ErrorResponse.class))}),
+            @ApiResponse(responseCode = "401", description = "No Authentication found or expired",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class))}),
+            @ApiResponse(responseCode = "403", description = "Forbidden",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class))})
     })
-    @GlobalApiResponses(responseCode = "401", description = "Invalid email or password credentials")
     @Transactional(readOnly = true)
     @GetMapping("/users")
     @PreAuthorize("hasRole('ADMIN')")
