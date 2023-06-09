@@ -1,8 +1,10 @@
 package com.dqtri.mango.safeguard.security.refresh;
 
 import org.springframework.security.authentication.AbstractAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.util.Collection;
 import java.util.Objects;
 
 public class RefreshAuthenticationToken extends AbstractAuthenticationToken {
@@ -13,8 +15,8 @@ public class RefreshAuthenticationToken extends AbstractAuthenticationToken {
         this.principal = token;
     }
 
-    public RefreshAuthenticationToken(UserDetails principal) {
-        super(principal.getAuthorities());
+    public RefreshAuthenticationToken(UserDetails principal, Collection<? extends GrantedAuthority> authorities) {
+        super(authorities);
         this.principal = principal;
         super.setAuthenticated(true);
     }

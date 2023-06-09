@@ -15,7 +15,6 @@ import lombok.Setter;
 @EqualsAndHashCode
 @MappedSuperclass
 public abstract class BaseEntity {
-    @JsonIgnore
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "pk")

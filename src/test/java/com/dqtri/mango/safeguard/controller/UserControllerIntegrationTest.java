@@ -5,13 +5,12 @@
 
 package com.dqtri.mango.safeguard.controller;
 
-import com.dqtri.mango.safeguard.common.PageDeserializer;
-import com.dqtri.mango.safeguard.common.RestResponsePage;
 import com.dqtri.mango.safeguard.config.SecurityConfig;
 import com.dqtri.mango.safeguard.model.SafeguardUser;
 import com.dqtri.mango.safeguard.model.dto.PageCriteria;
 import com.dqtri.mango.safeguard.model.enums.Role;
 import com.dqtri.mango.safeguard.repository.UserRepository;
+import com.dqtri.mango.safeguard.util.PageDeserializer;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
@@ -81,24 +80,25 @@ public class UserControllerIntegrationTest extends AbstractIntegrationTest {
         @WithMockUser(roles = "ADMIN")
         void getAllUsers_defaultPageSize_returnPagination() throws Exception {
             PageCriteria pageCriteria = new PageCriteria(0, 25);
+            Pageable pageable = pageCriteria.toPageable("email");
             List<SafeguardUser> users = new ArrayList<>();
             SafeguardUser safeguardUser = new SafeguardUser();
-            safeguardUser.setEmail("abc");
+            safeguardUser.setPk(3L);
+            safeguardUser.setEmail("abc@abc.com");
             safeguardUser.setRole(Role.NONE);
             users.add(safeguardUser);
-            Page<SafeguardUser> usersPage = new PageImpl<>(users);
-//            Page<SafeguardUser> usersPage2 = new PageImpl<>(users, pageableCaptor.capture(), 1);
+            Page<SafeguardUser> usersPage = new PageImpl<>(users, pageable, 1);
+//            Page<SafeguardUser> usersPage = new PageImpl<>(users, pageableCaptor.capture(), 1);
             when(userRepository.findAll(pageableCaptor.capture())).thenReturn(usersPage);
 
             MvcResult mvcResult = performRequest(status().isOk());
             String json = mvcResult.getResponse().getContentAsString();
             ObjectMapper objectMapper = new ObjectMapper();
-            RestResponsePage<SafeguardUser> result = objectMapper.readValue(json, new TypeReference<>() {});
+            SimpleModule module = new SimpleModule();
+            module.addDeserializer(Page.class, new PageDeserializer<>(SafeguardUser.class));
+            objectMapper.registerModule(module);
 
-//            SimpleModule module = new SimpleModule();
-//            module.addDeserializer(Page.class, new PageDeserializer<>());
-//            objectMapper.registerModule(module);
-//            Page<SafeguardUser> result2 = objectMapper.readValue(json, new TypeReference<>() {});
+            Page<SafeguardUser> result = objectMapper.readValue(json, new TypeReference<>() {});
         }
 
         private MvcResult performRequest(ResultMatcher... matchers) throws Exception {

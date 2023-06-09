@@ -43,7 +43,7 @@ public class AccessTokenResolver implements TokenResolver {
         String subject = body.getSubject();
         BasicUserDetails userDetails = (BasicUserDetails) userDetailsService.loadUserByUsername(subject);
         AppUserDetails appUserDetails = AppUserDetails.create(userDetails.getSafeguardUser());
-        return new AccessAuthenticationToken(appUserDetails);
+        return new AccessAuthenticationToken(appUserDetails, appUserDetails.getAuthorities());
     }
 
     private PublicKey getAccessPublicKey() throws NoSuchAlgorithmException, InvalidKeySpecException {

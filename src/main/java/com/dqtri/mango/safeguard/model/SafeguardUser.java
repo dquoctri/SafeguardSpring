@@ -2,6 +2,7 @@ package com.dqtri.mango.safeguard.model;
 
 import com.dqtri.mango.safeguard.model.enums.Role;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -19,8 +20,8 @@ import lombok.Setter;
 @Setter
 @Getter
 @EqualsAndHashCode(callSuper = true, exclude = "password")
-@Table(name = "safeguard_user")
 @Entity
+@Table(name = "safeguard_user")
 public class SafeguardUser extends BaseEntity {
 
     @Schema(example = "registered@dqtri.com")

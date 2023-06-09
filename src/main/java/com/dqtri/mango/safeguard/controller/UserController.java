@@ -23,6 +23,8 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -67,9 +69,10 @@ public class UserController {
     @GetMapping("/users")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Page<SafeguardUser>> getUsers(@Valid PageCriteria pageCriteria) {
-        Pageable pageable = pageCriteria.toPageable("pk");
+        PageRequest pageable = pageCriteria.toPageable("pk");
         Page<SafeguardUser> users = userRepository.findAll(pageable);
-        return ResponseEntity.ok(users);
+//        PageRequest.of(users.getContent(), users.getTotalElements(), pageable)
+        return ResponseEntity.ok(new PageImpl<>(users.getContent(), pageable, users.getTotalElements()));
     }
 
     @Operation(summary = "Get user by ID", description = "Retrieve user information based on the provided ID")

@@ -10,6 +10,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 
+import java.util.List;
+
 @Setter
 @Getter
 @NoArgsConstructor
@@ -23,8 +25,9 @@ public final class PageCriteria {
     @Schema(example = "25")
     private int pageSize = 25;
 
-    public Pageable toPageable(String sortProperties) {
-        Sort sort = Sort.by(sortProperties);
+    public PageRequest toPageable(String sortProperties) {
+        Sort.Order order = Sort.Order.by(sortProperties).with(Sort.Direction.ASC);
+        Sort sort = Sort.by(List.of(order));
         return PageRequest.of(pageNumber, pageSize, sort);
     }
 }

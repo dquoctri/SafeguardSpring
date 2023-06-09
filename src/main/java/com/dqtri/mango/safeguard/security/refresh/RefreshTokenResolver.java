@@ -38,7 +38,7 @@ public class RefreshTokenResolver implements TokenResolver {
         Claims body = claimsJws.getBody();
         String subject = body.getSubject();
         UserDetails userDetails = userDetailsService.loadUserByUsername(subject);
-        return new RefreshAuthenticationToken(userDetails);
+        return new RefreshAuthenticationToken(userDetails, userDetails.getAuthorities());
     }
 
     public Jws<Claims> validateRefreshToken(String refreshToken) {

@@ -105,7 +105,7 @@ class AccessAuthenticationFilterTest {
         safeguardUser.setRole(Role.SUBMITTER);
 
         AppUserDetails userDetails = new AppUserDetails(safeguardUser);
-        Authentication authentication = new AccessAuthenticationToken(userDetails);
+        Authentication authentication = new AccessAuthenticationToken(userDetails, userDetails.getAuthorities());
         AccessAuthenticationToken jwtAuthenticationToken = new AccessAuthenticationToken("Bearer token");
         when(httpServletRequest.getHeader("Authorization")).thenReturn("Bearer token");
         when(authenticationManager.authenticate(jwtAuthenticationToken)).thenReturn(authentication);

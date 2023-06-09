@@ -3,8 +3,8 @@ package com.dqtri.mango.safeguard.common;
 import com.dqtri.mango.safeguard.model.SafeguardUser;
 import com.dqtri.mango.safeguard.model.enums.Role;
 import com.dqtri.mango.safeguard.security.BasicUserDetails;
+import com.dqtri.mango.safeguard.security.access.AccessAuthenticationToken;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -20,8 +20,6 @@ import java.util.Arrays;
 import java.util.List;
 
 public class WithMockBasicUserSecurityContextFactory implements WithSecurityContextFactory<WithMockBasicUser> {
-    private SecurityContextHolderStrategy securityContextHolderStrategy = SecurityContextHolder
-            .getContextHolderStrategy();
     @Override
     public SecurityContext createSecurityContext(WithMockBasicUser customUser) {
         String email = StringUtils.hasLength(customUser.email()) ? customUser.email() : customUser.value();
@@ -44,16 +42,12 @@ public class WithMockBasicUserSecurityContextFactory implements WithSecurityCont
         safeguardUser.setEmail(email);
         safeguardUser.setPassword(customUser.password());
         safeguardUser.setRole(Role.NONE); //we only mock authorities for testing
+
         BasicUserDetails basicUserDetails = new BasicUserDetails(safeguardUser);
-        Authentication authentication = UsernamePasswordAuthenticationToken.authenticated(basicUserDetails,
-                safeguardUser.getPassword(), grantedAuthorities);
-        SecurityContext context = this.securityContextHolderStrategy.createEmptyContext();
+        Authentication authentication = new AccessAuthenticationToken(basicUserDetails, grantedAuthorities);
+
+        SecurityContext context = SecurityContextHolder.createEmptyContext();
         context.setAuthentication(authentication);
         return context;
-    }
-
-    @Autowired(required = false)
-    void setSecurityContextHolderStrategy(SecurityContextHolderStrategy securityContextHolderStrategy) {
-        this.securityContextHolderStrategy = securityContextHolderStrategy;
     }
 }

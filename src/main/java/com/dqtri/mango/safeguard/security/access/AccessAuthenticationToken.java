@@ -15,8 +15,8 @@ import java.util.Objects;
 public class AccessAuthenticationToken extends AbstractAuthenticationToken {
     private final Object principal;
 
-    public AccessAuthenticationToken(UserDetails principal) {
-        super(principal.getAuthorities());
+    public AccessAuthenticationToken(UserDetails principal, Collection<? extends GrantedAuthority> authorities) {
+        super(authorities);
         this.principal = principal;
         super.setAuthenticated(true);
     }
