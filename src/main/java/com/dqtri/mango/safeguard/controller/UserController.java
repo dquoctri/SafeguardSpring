@@ -1,5 +1,6 @@
 package com.dqtri.mango.safeguard.controller;
 
+import com.dqtri.mango.safeguard.annotation.GlobalApiResponses;
 import com.dqtri.mango.safeguard.exception.ConflictException;
 import com.dqtri.mango.safeguard.model.SafeguardUser;
 import com.dqtri.mango.safeguard.model.dto.PageCriteria;
@@ -7,10 +8,12 @@ import com.dqtri.mango.safeguard.model.dto.payload.ResetPasswordPayload;
 import com.dqtri.mango.safeguard.model.dto.payload.UserCreatingPayload;
 import com.dqtri.mango.safeguard.model.dto.payload.UserUpdatingPayload;
 import com.dqtri.mango.safeguard.model.dto.response.ErrorResponse;
+import com.dqtri.mango.safeguard.model.dto.response.UserResponse;
 import com.dqtri.mango.safeguard.model.enums.Role;
 import com.dqtri.mango.safeguard.repository.UserRepository;
 import com.dqtri.mango.safeguard.security.AppUserDetails;
 import com.dqtri.mango.safeguard.security.UserPrincipal;
+import com.dqtri.mango.safeguard.util.Helper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -23,9 +26,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
@@ -41,6 +42,8 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 @RestController
 @RequiredArgsConstructor
 @SecurityRequirement(name = "access_token")
@@ -51,41 +54,41 @@ public class UserController {
     private final UserRepository userRepository;
 
     @Operation(summary = "Get users", description = "Retrieve a paginated list of users")
+    @GlobalApiResponses
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successful retrieval a paginated list of users",
                     content = {@Content(mediaType = "application/json",
                             schema = @Schema(implementation = Page.class))}),
-            @ApiResponse(responseCode = "400", description = "Invalid page criteria",
+            @ApiResponse(responseCode = "400", description = "Invalid validation constraints",
                     content = {@Content(mediaType = "application/json",
                             schema = @Schema(implementation = ProblemDetail.class))}),
-            @ApiResponse(responseCode = "401", description = "No Authentication found or expired",
-                    content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorResponse.class))}),
-            @ApiResponse(responseCode = "403", description = "Forbidden",
-                    content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorResponse.class))})
     })
     @Transactional(readOnly = true)
     @GetMapping("/users")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Page<SafeguardUser>> getUsers(@Valid PageCriteria pageCriteria) {
+    public ResponseEntity<Page<UserResponse>> getUsers(@Valid PageCriteria pageCriteria) {
         PageRequest pageable = pageCriteria.toPageable("pk");
-        Page<SafeguardUser> users = userRepository.findAll(pageable);
-//        PageRequest.of(users.getContent(), users.getTotalElements(), pageable)
-        return ResponseEntity.ok(new PageImpl<>(users.getContent(), pageable, users.getTotalElements()));
+        Page<SafeguardUser> page = userRepository.findAll(pageable);
+        List<UserResponse> userResponses = UserResponse.buildFromUsers(page.getContent());
+        Page<UserResponse> pagination = Helper.createPagination(userResponses, page);
+        return ResponseEntity.ok(pagination);
     }
 
     @Operation(summary = "Get user by ID", description = "Retrieve user information based on the provided ID")
+    @GlobalApiResponses
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successful retrieval of the user",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = SafeguardUser.class))})
+                            schema = @Schema(implementation = SafeguardUser.class))}),
+            @ApiResponse(responseCode = "404", description = "Id is not found",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class))})
     })
     @GetMapping("/users/{userId}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<SafeguardUser> getUser(@PathVariable("userId") Long userId) {
+    public ResponseEntity<UserResponse> getUser(@PathVariable("userId") Long userId) {
         SafeguardUser safeguardUser = getUserOrElseThrow(userId);
-        return ResponseEntity.ok(safeguardUser);
+        return ResponseEntity.ok(new UserResponse(safeguardUser));
     }
 
     @Operation(summary = "Get my profiles", description = "Retrieve profiles of the currently authenticated user")
@@ -96,9 +99,9 @@ public class UserController {
     })
     @GetMapping("/users/me")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<SafeguardUser> getMyProfiles(@UserPrincipal AppUserDetails currentUser) {
+    public ResponseEntity<UserResponse> getMyProfiles(@UserPrincipal AppUserDetails currentUser) {
         SafeguardUser safeguardUser = currentUser.getSafeguardUser();
-        return ResponseEntity.ok(safeguardUser);
+        return ResponseEntity.ok(new UserResponse(safeguardUser));
     }
 
     @Operation(summary = "Create user", description = "Create a new user with the provided details")
@@ -110,10 +113,10 @@ public class UserController {
     @PostMapping(value = "/users", consumes = {MediaType.APPLICATION_JSON_VALUE},
             produces = {MediaType.APPLICATION_JSON_VALUE})
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<SafeguardUser> createUser(@RequestBody @Valid UserCreatingPayload payload) {
+    public ResponseEntity<UserResponse> createUser(@RequestBody @Valid UserCreatingPayload payload) {
         validateUniqueEmail(payload.getEmail());
         SafeguardUser saved = userRepository.save(createCoreUser(payload));
-        return new ResponseEntity<>(saved, HttpStatus.CREATED);
+        return new ResponseEntity<>(new UserResponse(saved), HttpStatus.CREATED);
     }
 
     private void validateUniqueEmail(String email) {
@@ -143,11 +146,11 @@ public class UserController {
     })
     @PutMapping("/users/{userId}")
     @PreAuthorize("hasRole('ADMIN') and hasPermission('#userId', 'nonAdminResource')")
-    public ResponseEntity<SafeguardUser> updateUser(@PathVariable("userId") Long userId,
+    public ResponseEntity<UserResponse> updateUser(@PathVariable("userId") Long userId,
                                                     @Valid @RequestBody UserUpdatingPayload payload) {
         SafeguardUser user = getUserOrElseThrow(userId);
         user.setRole(payload.getRole());
-        return ResponseEntity.ok(user);
+        return ResponseEntity.ok(new UserResponse(user));
     }
 
     @Operation(summary = "Update user password", description = "Update the password of an existing user.")

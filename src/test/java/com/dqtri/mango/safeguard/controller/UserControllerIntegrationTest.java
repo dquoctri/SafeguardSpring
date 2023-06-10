@@ -99,6 +99,7 @@ public class UserControllerIntegrationTest extends AbstractIntegrationTest {
             objectMapper.registerModule(module);
 
             Page<SafeguardUser> result = objectMapper.readValue(json, new TypeReference<>() {});
+
         }
 
         private MvcResult performRequest(ResultMatcher... matchers) throws Exception {

@@ -12,15 +12,17 @@ import java.util.List;
 @Getter
 @NoArgsConstructor
 public class UserResponse {
+    private Long id;
     private String email;
     private Role role;
 
-    public UserResponse(SafeguardUser appUser){
+    public UserResponse(SafeguardUser appUser) {
+        this.id = appUser.getPk();
         this.email = appUser.getEmail();
         this.role = appUser.getRole();
     }
 
-    public List<UserResponse> parseToUserResponse(List<SafeguardUser> appUsers){
+    public static List<UserResponse> buildFromUsers(List<SafeguardUser> appUsers) {
         return appUsers.stream().map(UserResponse::new).toList();
     }
 }
