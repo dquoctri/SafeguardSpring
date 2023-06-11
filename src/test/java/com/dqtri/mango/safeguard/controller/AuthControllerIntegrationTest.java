@@ -15,7 +15,6 @@ import com.dqtri.mango.safeguard.model.dto.response.AuthenticationResponse;
 import com.dqtri.mango.safeguard.model.dto.response.ErrorResponse;
 import com.dqtri.mango.safeguard.model.dto.response.RefreshResponse;
 import com.dqtri.mango.safeguard.model.enums.Role;
-import com.dqtri.mango.safeguard.repository.BlackListRefreshTokenRepository;
 import com.dqtri.mango.safeguard.repository.LoginAttemptRepository;
 import com.dqtri.mango.safeguard.repository.UserRepository;
 import com.dqtri.mango.safeguard.security.BasicUserDetails;
@@ -35,7 +34,6 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -132,7 +130,7 @@ public class AuthControllerIntegrationTest extends AbstractIntegrationTest {
         }
 
         @ParameterizedTest
-        @ValueSource(strings = {"invalidEmailFormat", "invalidEmailFormat@", "@invalidEmailFormat"})
+        @ValueSource(strings = {"invalidEmailFormat", "invalidEmailFormat@", "@invalidEmailFormat", "mangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomango@dqtri.com"})
         void register_givenInvalidEmailFormat_thenBadRequest(String invalidEmail) throws Exception {
             RegisterPayload registerPayload = new RegisterPayload();
             registerPayload.setEmail(invalidEmail);
@@ -233,7 +231,7 @@ public class AuthControllerIntegrationTest extends AbstractIntegrationTest {
         }
 
         @ParameterizedTest
-        @ValueSource(strings = {"invalidEmailFormat", "invalidEmailFormat@", "@invalidEmailFormat"})
+        @ValueSource(strings = {"invalidEmailFormat", "invalidEmailFormat@", "@invalidEmailFormat", "mangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomango@dqtri.com"})
         void login_givenInvalidEmailFormat_thenBadRequest(String invalidEmail) throws Exception {
             LoginPayload loginPayload = new LoginPayload();
             loginPayload.setEmail(invalidEmail);
@@ -391,12 +389,11 @@ public class AuthControllerIntegrationTest extends AbstractIntegrationTest {
         }
 
         @Test
-        void refreshToken_withAppUser_thenForbidden() throws Exception {
-            performRefreshRequest(mockAdminUser(), status().isForbidden());
-            performRefreshRequest(mockSubmitterUser(), status().isForbidden());
-            performRefreshRequest(mockManagerUser(), status().isForbidden());
-            performRefreshRequest(mockSpecialistUser(), status().isForbidden());
-            performRefreshRequest(mockInactiveUser(), status().isForbidden());
+        void refreshToken_withLackOfPermissions_thenForbidden() throws Exception {
+            RequestPostProcessor user = user("app@dqtri.com").password("******")
+                    .roles("MANAGER", "SUBMITTER", "SPECIALIST", "NONE", "INVALID")
+                    .authorities(buildAuthorities("MANAGER", "SUBMITTER", "SPECIALIST", "NONE", "INVALID"));
+            performRefreshRequest(user, status().isForbidden());
         }
 
         @Test
@@ -479,22 +476,10 @@ public class AuthControllerIntegrationTest extends AbstractIntegrationTest {
         }
 
         @Test
-        void logout_withAppRoles_thenForbidden() throws Exception {
+        void logout_withLackOfPermissions_thenForbidden() throws Exception {
             RequestPostProcessor user = user("norefresh@dqtri.com").password("****")
-                    .roles("INVALID", "ADMIN", "SUBMITTER", "MANAGER", "SPECIALIST", "NONE");
-            performLogoutRequest(user, status().isForbidden());
-            verify(tokenProvider, never()).generateToken(any());
-        }
-
-        @Test
-        void logout_withAppAuthorities_thenForbidden() throws Exception {
-            var user = user("norefresh@dqtri.com").password("****")
-                    .authorities(new SimpleGrantedAuthority("INVALID"),
-                            new SimpleGrantedAuthority("ADMIN"),
-                            new SimpleGrantedAuthority("SUBMITTER"),
-                            new SimpleGrantedAuthority("MANAGER"),
-                            new SimpleGrantedAuthority("SPECIALIST"),
-                            new SimpleGrantedAuthority("NONE"));
+                    .roles("INVALID", "ADMIN", "SUBMITTER", "MANAGER", "SPECIALIST", "NONE")
+                    .authorities(buildAuthorities("INVALID", "ADMIN", "SUBMITTER", "MANAGER", "SPECIALIST", "NONE"));
             performLogoutRequest(user, status().isForbidden());
             verify(tokenProvider, never()).generateToken(any());
         }

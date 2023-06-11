@@ -5,22 +5,23 @@
 
 package com.dqtri.mango.safeguard.controller;
 
-import com.dqtri.mango.safeguard.model.enums.Role;
 import com.dqtri.mango.safeguard.repository.BlackListRefreshTokenRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.validation.constraints.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @WebMvcTest
 public abstract class AbstractIntegrationTest {
@@ -41,27 +42,8 @@ public abstract class AbstractIntegrationTest {
         return new ObjectMapper().writeValueAsString(value);
     }
 
-    protected RequestPostProcessor mockAdminUser() {
-        return mockUser("admin@mango.dqtri.com", Role.ADMIN);
-    }
-
-    protected RequestPostProcessor mockSubmitterUser() {
-        return mockUser("manager@mango.dqtri.com", Role.SUBMITTER);
-    }
-
-    protected RequestPostProcessor mockManagerUser() {
-        return mockUser("manager@mango.dqtri.com", Role.MANAGER);
-    }
-
-    protected RequestPostProcessor mockSpecialistUser() {
-        return mockUser("specialist@mango.dqtri.com", Role.SPECIALIST);
-    }
-
-    protected RequestPostProcessor mockInactiveUser() {
-        return mockUser("none@mango.dqtri.com", Role.NONE);
-    }
-
-    protected RequestPostProcessor mockUser(@NotNull String email, @NotNull Role role){
-        return user(email).password("********").roles(role.name()).authorities(new SimpleGrantedAuthority(role.name()));
+    protected List<GrantedAuthority> buildAuthorities(String... authorities){
+        if (authorities == null) return new ArrayList<>();
+        return Arrays.stream(authorities).map(SimpleGrantedAuthority::new).collect(Collectors.toList());
     }
 }

@@ -1,6 +1,8 @@
 package com.dqtri.mango.safeguard.controller;
 
-import com.dqtri.mango.safeguard.annotation.GlobalApiResponses;
+import com.dqtri.mango.safeguard.annotation.AuthenticationApiResponses;
+import com.dqtri.mango.safeguard.annotation.NotFound404ApiResponses;
+import com.dqtri.mango.safeguard.annotation.Validation400ApiResponses;
 import com.dqtri.mango.safeguard.exception.ConflictException;
 import com.dqtri.mango.safeguard.model.SafeguardUser;
 import com.dqtri.mango.safeguard.model.dto.PageCriteria;
@@ -29,7 +31,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -54,14 +55,12 @@ public class UserController {
     private final UserRepository userRepository;
 
     @Operation(summary = "Get users", description = "Retrieve a paginated list of users")
-    @GlobalApiResponses
+    @AuthenticationApiResponses
+    @Validation400ApiResponses
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successful retrieval a paginated list of users",
                     content = {@Content(mediaType = "application/json",
                             schema = @Schema(implementation = Page.class))}),
-            @ApiResponse(responseCode = "400", description = "Invalid validation constraints",
-                    content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = ProblemDetail.class))}),
     })
     @Transactional(readOnly = true)
     @GetMapping("/users")
@@ -75,14 +74,12 @@ public class UserController {
     }
 
     @Operation(summary = "Get user by ID", description = "Retrieve user information based on the provided ID")
-    @GlobalApiResponses
+    @AuthenticationApiResponses
+    @NotFound404ApiResponses
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successful retrieval of the user",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = SafeguardUser.class))}),
-            @ApiResponse(responseCode = "404", description = "Id is not found",
-                    content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorResponse.class))})
+                            schema = @Schema(implementation = UserResponse.class))})
     })
     @GetMapping("/users/{userId}")
     @PreAuthorize("hasRole('ADMIN')")
@@ -95,7 +92,7 @@ public class UserController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successful retrieval of profiles",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = SafeguardUser.class))})
+                            schema = @Schema(implementation = UserResponse.class))})
     })
     @GetMapping("/users/me")
     @PreAuthorize("isAuthenticated()")
@@ -108,7 +105,7 @@ public class UserController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successful creation of user",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = SafeguardUser.class))})
+                            schema = @Schema(implementation = UserResponse.class))})
     })
     @PostMapping(value = "/users", consumes = {MediaType.APPLICATION_JSON_VALUE},
             produces = {MediaType.APPLICATION_JSON_VALUE})
@@ -137,7 +134,7 @@ public class UserController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successful update of user",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = SafeguardUser.class))}),
+                            schema = @Schema(implementation = UserResponse.class))}),
             @ApiResponse(responseCode = "400", description = "Invalid request payload"),
             @ApiResponse(responseCode = "401", description = "Invalid email or password credentials",
                     content = {@Content(mediaType = "application/json",
