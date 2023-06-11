@@ -5,6 +5,7 @@ import com.dqtri.mango.safeguard.model.enums.Role;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.List;
 

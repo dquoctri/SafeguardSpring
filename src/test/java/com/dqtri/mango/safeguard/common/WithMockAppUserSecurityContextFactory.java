@@ -1,9 +1,8 @@
 package com.dqtri.mango.safeguard.common;
 
 import com.dqtri.mango.safeguard.model.SafeguardUser;
-import com.dqtri.mango.safeguard.model.enums.Role;
-import com.dqtri.mango.safeguard.security.BasicUserDetails;
-import com.dqtri.mango.safeguard.security.refresh.RefreshAuthenticationToken;
+import com.dqtri.mango.safeguard.security.AppUserDetails;
+import com.dqtri.mango.safeguard.security.access.AccessAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -17,9 +16,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class WithMockBasicUserSecurityContextFactory implements WithSecurityContextFactory<WithMockBasicUser> {
+public class WithMockAppUserSecurityContextFactory implements WithSecurityContextFactory<WithMockAppUser> {
     @Override
-    public SecurityContext createSecurityContext(WithMockBasicUser customUser) {
+    public SecurityContext createSecurityContext(WithMockAppUser customUser) {
         String email = StringUtils.hasLength(customUser.email()) ? customUser.email() : customUser.value();
         Assert.notNull(email, () -> customUser + " cannot have null username on both username and value properties");
         List<GrantedAuthority> grantedAuthorities = new ArrayList<>();
@@ -41,8 +40,8 @@ public class WithMockBasicUserSecurityContextFactory implements WithSecurityCont
         safeguardUser.setPassword(customUser.password());
         safeguardUser.setRole(customUser.role());
 
-        BasicUserDetails basicUserDetails = new BasicUserDetails(safeguardUser);
-        Authentication authentication = new RefreshAuthenticationToken(basicUserDetails, grantedAuthorities);
+        AppUserDetails appUserDetails = new AppUserDetails(safeguardUser);
+        Authentication authentication = new AccessAuthenticationToken(appUserDetails, grantedAuthorities);
 
         SecurityContext context = SecurityContextHolder.createEmptyContext();
         context.setAuthentication(authentication);

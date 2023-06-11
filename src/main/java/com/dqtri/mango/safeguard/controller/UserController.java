@@ -33,6 +33,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -89,16 +90,20 @@ public class UserController {
     }
 
     @Operation(summary = "Get my profiles", description = "Retrieve profiles of the currently authenticated user")
+    @AuthenticationApiResponses
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successful retrieval of profiles",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = UserResponse.class))})
+                            schema = @Schema(implementation = UserResponse.class))}),
     })
     @GetMapping("/users/me")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<UserResponse> getMyProfiles(@UserPrincipal AppUserDetails currentUser) {
-        SafeguardUser safeguardUser = currentUser.getSafeguardUser();
-        return ResponseEntity.ok(new UserResponse(safeguardUser));
+        if (currentUser != null){
+            SafeguardUser safeguardUser = currentUser.getSafeguardUser();
+            return ResponseEntity.ok(new UserResponse(safeguardUser));
+        }
+        return ResponseEntity.noContent().build();
     }
 
     @Operation(summary = "Create user", description = "Create a new user with the provided details")

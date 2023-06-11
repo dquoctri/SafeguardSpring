@@ -5,6 +5,7 @@
 
 package com.dqtri.mango.safeguard.controller;
 
+import com.dqtri.mango.safeguard.common.WithMockAppUser;
 import com.dqtri.mango.safeguard.config.SecurityConfig;
 import com.dqtri.mango.safeguard.model.SafeguardUser;
 import com.dqtri.mango.safeguard.model.dto.response.ErrorResponse;
@@ -19,8 +20,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.ComponentScan;
@@ -30,21 +29,18 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultMatcher;
-import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -57,74 +53,6 @@ public class UserControllerIntegrationTest extends AbstractIntegrationTest {
     private PasswordEncoder passwordEncoder;
     @MockBean
     private UserRepository userRepository;
-
-    @Nested
-    class RouteGetAllUsersAuthorizationIntegrationTest {
-        private static final String USER_ROUTE = "/users";
-
-        @Test
-        @WithMockUser(roles = "ADMIN")
-        void getAllUsers_defaultAdmin_returnPagination() throws Exception {
-            Pageable pageable = PageRequest.of(0, 25, Sort.by(Sort.DEFAULT_DIRECTION, "pk"));
-            Page<SafeguardUser> usersPage = new PageImpl<>(new ArrayList<>(), pageable, 0);
-            when(userRepository.findAll(pageable)).thenReturn(usersPage);
-            //then
-            performRequest(status().isOk());
-        }
-
-        @Test
-        void getAllUsers_nonMockUser_returnUnauthorized() throws Exception {
-            performRequest(status().isUnauthorized());
-        }
-
-        @Test
-        @WithMockUser(roles = {"MANAGER", "SUBMITTER", "SPECIALIST", "NONE", "REFRESH", "INVALID"})
-        void getAllUsers_giveNonAdminRoles_thenForbidden() throws Exception {
-            MvcResult mvcResult = performRequest(status().isForbidden());
-            String json = mvcResult.getResponse().getContentAsString();
-            ErrorResponse errorResponse = new ObjectMapper().readValue(json, ErrorResponse.class);
-            //test
-            assertForbiddenResponse(errorResponse);
-        }
-
-        @Test
-        @WithMockUser(authorities = {"MANAGER", "SUBMITTER", "SPECIALIST", "NONE", "REFRESH", "INVALID"})
-        void getAllUsers_giveNonAdminAuthority_thenForbidden() throws Exception {
-            MvcResult mvcResult = performRequest(status().isForbidden());
-            String json = mvcResult.getResponse().getContentAsString();
-            ErrorResponse errorResponse = new ObjectMapper().readValue(json, ErrorResponse.class);
-            //test
-            assertForbiddenResponse(errorResponse);
-        }
-
-        @Test
-        void getAllUsers_mockAuthorityOfOthers_thenForbidden() throws Exception {
-            RequestPostProcessor user = user("appuser@dqtri.com").password("******")
-                    .roles("MANAGER", "SUBMITTER", "SPECIALIST", "NONE", "REFRESH", "INVALID")
-                    .authorities(buildAuthorities("MANAGER", "SUBMITTER", "SPECIALIST", "NONE",
-                            "REFRESH", "INVALID"));
-            MvcResult mvcResult = performRequest(user, status().isForbidden());
-            String json = mvcResult.getResponse().getContentAsString();
-            ErrorResponse errorResponse = new ObjectMapper().readValue(json, ErrorResponse.class);
-            //test
-            assertForbiddenResponse(errorResponse);
-        }
-
-        private void assertForbiddenResponse(ErrorResponse errorResponse){
-            assertThat(errorResponse).isNotNull();
-            assertThat(errorResponse.getStatus()).isEqualTo(HttpStatus.FORBIDDEN);
-            assertThat(errorResponse.getMessage()).isEqualTo("Access Denied");
-        }
-
-        private MvcResult performRequest(ResultMatcher... matchers) throws Exception {
-            return mvc.perform(get(USER_ROUTE)).andExpectAll(matchers).andReturn();
-        }
-
-        private MvcResult performRequest(RequestPostProcessor forbiddenProcessor,
-                                         ResultMatcher... matchers) throws Exception {
-            return mvc.perform(get(USER_ROUTE).with(forbiddenProcessor)).andExpectAll(matchers).andReturn();
-        }
-    }
 
     @Nested
     class RouteGetAllUsersFeatureIntegrationTest {
@@ -298,8 +226,25 @@ public class UserControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Nested
-    class RouteGetUserAuthorizationIntegrationTest {
-        private static final String USER_ROUTE = "/users/";
+    class RouteGetUserFeatureIntegrationTest {
+        private static final String USER_PROFILE_ROUTE = "/users/me";
 
+        @Test
+        @WithMockAppUser(email = "mango@dqtri.com", role = Role.SUBMITTER)
+        void getProfiles_mockUser_thenUserResponse() throws Exception {
+            MvcResult mvcResult = performRequest(status().isOk());
+            String json = mvcResult.getResponse().getContentAsString();
+            UserResponse userResponse = new ObjectMapper().readValue(json, UserResponse.class);
+            assertThat(userResponse).isNotNull();
+            assertThat(userResponse.getEmail()).isEqualTo("mango@dqtri.com");
+            assertThat(userResponse.getRole()).isEqualTo(Role.SUBMITTER);
+        }
+
+        private MvcResult performRequest(ResultMatcher... matchers) throws Exception {
+            return mvc.perform(get(USER_PROFILE_ROUTE))
+                    .andExpectAll(matchers).andReturn();
+        }
     }
+
+
 }
