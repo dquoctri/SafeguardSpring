@@ -33,7 +33,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -61,7 +60,7 @@ public class UserController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successful retrieval a paginated list of users",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = Page.class))}),
+                            schema = @Schema(implementation = Page.class, subTypes = UserResponse.class))}),
     })
     @Transactional(readOnly = true)
     @GetMapping("/users")
@@ -107,10 +106,15 @@ public class UserController {
     }
 
     @Operation(summary = "Create user", description = "Create a new user with the provided details")
+    @AuthenticationApiResponses
+    @Validation400ApiResponses
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successful creation of user",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = UserResponse.class))})
+                            schema = @Schema(implementation = UserResponse.class))}),
+            @ApiResponse(responseCode = "409", description = "Email is already in use",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class))})
     })
     @PostMapping(value = "/users", consumes = {MediaType.APPLICATION_JSON_VALUE},
             produces = {MediaType.APPLICATION_JSON_VALUE})
@@ -136,15 +140,13 @@ public class UserController {
     }
 
     @Operation(summary = "Update user", description = "Update an existing user with the provided details.")
+    @AuthenticationApiResponses
+    @Validation400ApiResponses
+    @NotFound404ApiResponses
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successful update of user",
                     content = {@Content(mediaType = "application/json",
                             schema = @Schema(implementation = UserResponse.class))}),
-            @ApiResponse(responseCode = "400", description = "Invalid request payload"),
-            @ApiResponse(responseCode = "401", description = "Invalid email or password credentials",
-                    content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorResponse.class))}),
-            @ApiResponse(responseCode = "404", description = "User not found"),
     })
     @PutMapping("/users/{userId}")
     @PreAuthorize("hasRole('ADMIN') and hasPermission('#userId', 'nonAdminResource')")
@@ -156,10 +158,11 @@ public class UserController {
     }
 
     @Operation(summary = "Update user password", description = "Update the password of an existing user.")
+    @AuthenticationApiResponses
+    @Validation400ApiResponses
+    @NotFound404ApiResponses
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successful update of user password"),
-            @ApiResponse(responseCode = "404", description = "User not found"),
-            @ApiResponse(responseCode = "400", description = "Invalid request payload")
     })
     @PutMapping("/users/{userId}/password")
     @PreAuthorize("hasRole('ADMIN') and hasPermission('#userId', 'nonAdminResource')")
@@ -171,9 +174,10 @@ public class UserController {
     }
 
     @Operation(summary = "Delete user", description = "Delete an existing user.")
+    @AuthenticationApiResponses
+    @NotFound404ApiResponses
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204", description = "Successful deletion of user"),
-            @ApiResponse(responseCode = "404", description = "User not found")
     })
     @DeleteMapping("/users/{userId}")
     @PreAuthorize("hasRole('ADMIN') and hasPermission('#userId', 'nonAdminResource')")

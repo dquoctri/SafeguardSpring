@@ -5,6 +5,8 @@
 
 package com.dqtri.mango.safeguard.controller;
 
+import com.dqtri.mango.safeguard.annotation.AuthenticationApiResponses;
+import com.dqtri.mango.safeguard.annotation.Validation400ApiResponses;
 import com.dqtri.mango.safeguard.model.Submission;
 import com.dqtri.mango.safeguard.model.dto.PageCriteria;
 import com.dqtri.mango.safeguard.model.dto.payload.SubmissionPayload;
@@ -41,6 +43,8 @@ public class SubmissionController {
     private final SubmissionRepository submissionRepository;
 
     @Operation(summary = "Get submissions", description = "Retrieve a paginated list of submissions")
+    @AuthenticationApiResponses
+    @Validation400ApiResponses
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successful retrieval a paginated list of submissions",
                     content = {@Content(mediaType = "application/json",
