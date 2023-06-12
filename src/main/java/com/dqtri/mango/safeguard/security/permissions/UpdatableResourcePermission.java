@@ -13,8 +13,8 @@ import java.io.Serializable;
 
 @Slf4j
 @RequiredArgsConstructor
-@Component("isAdminResource")
-public class IsAdminResourcePermission extends Permission {
+@Component("updatableResource")
+public class UpdatableResourcePermission extends Permission {
 
     private final UserRepository userRepository;
 
@@ -24,7 +24,7 @@ public class IsAdminResourcePermission extends Permission {
         SafeguardUser user = userRepository.findById(userId)
                 .orElseThrow(() -> new EntityNotFoundException(String.format("User is not found with id: %s", userId)));
 
-        return Role.ADMIN.equals(user.getRole());
+        return !Role.ADMIN.equals(user.getRole());
     }
 
     @Override

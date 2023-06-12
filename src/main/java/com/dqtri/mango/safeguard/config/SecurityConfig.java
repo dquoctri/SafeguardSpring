@@ -8,6 +8,9 @@ import jakarta.servlet.Filter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.access.PermissionEvaluator;
+import org.springframework.security.access.expression.method.DefaultMethodSecurityExpressionHandler;
+import org.springframework.security.access.expression.method.MethodSecurityExpressionHandler;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
@@ -39,8 +42,8 @@ public class SecurityConfig {
     private final AuthenticationProvider refreshAuthenticationProvider;
     private final AuthenticationProvider accessAuthenticationProvider;
     private final UserDetailsService userDetailsService;
-
     private final BlackListRefreshTokenRepository blackListRefreshTokenRepository;
+    private final PermissionEvaluator permissionEvaluator;
 
     @Bean
     public SecurityFilterChain authorizeFilterChain(HttpSecurity http) throws Exception {
@@ -127,6 +130,13 @@ public class SecurityConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public MethodSecurityExpressionHandler expressionHandler() {
+        var expressionHandler = new DefaultMethodSecurityExpressionHandler();
+        expressionHandler.setPermissionEvaluator(permissionEvaluator);
+        return expressionHandler;
     }
 
 }

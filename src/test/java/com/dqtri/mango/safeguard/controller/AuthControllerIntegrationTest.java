@@ -414,8 +414,8 @@ public class AuthControllerIntegrationTest extends AbstractIntegrationTest {
             return mvc.perform(get(REFRESH_ROUTE)).andExpectAll(matchers).andReturn();
         }
 
-        private MvcResult performRefreshRequest(RequestPostProcessor forbiddenProcessor, ResultMatcher... matchers) throws Exception {
-            return mvc.perform(get(REFRESH_ROUTE).with(forbiddenProcessor)).andExpectAll(matchers).andReturn();
+        private MvcResult performRefreshRequest(RequestPostProcessor processor, ResultMatcher... matchers) throws Exception {
+            return mvc.perform(get(REFRESH_ROUTE).with(processor)).andExpectAll(matchers).andReturn();
         }
     }
 

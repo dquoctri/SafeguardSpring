@@ -149,7 +149,7 @@ public class UserController {
                             schema = @Schema(implementation = UserResponse.class))}),
     })
     @PutMapping("/users/{userId}")
-    @PreAuthorize("hasRole('ADMIN') and hasPermission('#userId', 'nonAdminResource')")
+    @PreAuthorize("hasRole('ADMIN') and hasPermission(#userId, @updatableResource)")
     public ResponseEntity<UserResponse> updateUser(@PathVariable("userId") Long userId,
                                                     @Valid @RequestBody UserUpdatingPayload payload) {
         SafeguardUser user = getUserOrElseThrow(userId);
@@ -165,7 +165,7 @@ public class UserController {
             @ApiResponse(responseCode = "200", description = "Successful update of user password"),
     })
     @PutMapping("/users/{userId}/password")
-    @PreAuthorize("hasRole('ADMIN') and hasPermission('#userId', 'nonAdminResource')")
+    @PreAuthorize("hasRole('ADMIN') and hasPermission('#userId', '@nonAdminResource')")
     public ResponseEntity<Void> updateUserPassword(@PathVariable("userId") Long userId,
                                                    @Valid @RequestBody ResetPasswordPayload payload) {
         SafeguardUser user = getUserOrElseThrow(userId);

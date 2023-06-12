@@ -6,11 +6,14 @@
 package com.dqtri.mango.safeguard.controller;
 
 import com.dqtri.mango.safeguard.annotation.AuthenticationApiResponses;
+import com.dqtri.mango.safeguard.annotation.NotFound404ApiResponses;
 import com.dqtri.mango.safeguard.annotation.Validation400ApiResponses;
 import com.dqtri.mango.safeguard.model.Submission;
 import com.dqtri.mango.safeguard.model.dto.PageCriteria;
 import com.dqtri.mango.safeguard.model.dto.payload.SubmissionPayload;
+import com.dqtri.mango.safeguard.model.dto.response.SubmissionResponse;
 import com.dqtri.mango.safeguard.repository.SubmissionRepository;
+import com.dqtri.mango.safeguard.util.Helper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -34,6 +37,8 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 @RestController
 @RequiredArgsConstructor
 @SecurityRequirement(name = "access_token")
@@ -48,75 +53,82 @@ public class SubmissionController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successful retrieval a paginated list of submissions",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = Page.class, subTypes = Submission.class))})
+                            schema = @Schema(implementation = Page.class, subTypes = SubmissionResponse.class))})
     })
     @Transactional(readOnly = true)
     @GetMapping("/submissions")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SPECIALIST', 'SUBMITTER')")
-    public ResponseEntity<Page<Submission>> getSubmissions(@Valid PageCriteria pageCriteria) {
+    public ResponseEntity<Page<SubmissionResponse>> getSubmissions(@Valid PageCriteria pageCriteria) {
         Pageable pageable = pageCriteria.toPageable("pk");
-        Page<Submission> all = submissionRepository.findAll(pageable);
-        return ResponseEntity.ok(all);
+        Page<Submission> page = submissionRepository.findAll(pageable);
+        List<SubmissionResponse> submissionResponses = SubmissionResponse.buildFromSubmissions(page.getContent());
+        Page<SubmissionResponse> pagination = Helper.createPagination(submissionResponses, page);
+        return ResponseEntity.ok(pagination);
     }
 
     @Operation(summary = "Get submission", description = "Retrieve a submission based on the provided ID")
+    @AuthenticationApiResponses
+    @NotFound404ApiResponses
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successful retrieval of submission",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = Submission.class))}),
-            @ApiResponse(responseCode = "404", description = "Submission not found")
+                            schema = @Schema(implementation = SubmissionResponse.class))})
     })
     @Transactional(readOnly = true)
     @GetMapping("/submissions/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SPECIALIST', 'SUBMITTER')")
-    public ResponseEntity<Submission> getSubmission(@PathVariable("id") Long id) {
+    public ResponseEntity<SubmissionResponse> getSubmission(@PathVariable("id") Long id) {
         Submission submission = getSubmissionOrElseThrow(id);
-        return ResponseEntity.ok(submission);
+        return ResponseEntity.ok(new SubmissionResponse(submission));
     }
 
     @Operation(summary = "Create submission", description = "Create a new submission with the provided details")
+    @AuthenticationApiResponses
+    @Validation400ApiResponses
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Successful creation of submission",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = Submission.class))}),
-            @ApiResponse(responseCode = "400", description = "Invalid request payload")
+                            schema = @Schema(implementation = SubmissionResponse.class))})
     })
     @Transactional
     @PostMapping("/submissions")
     @PreAuthorize("hasAnyRole('ADMIN', 'SUBMITTER')")
-    public ResponseEntity<Submission> createSubmission(@RequestBody @Valid SubmissionPayload submissionPayload) {
+    public ResponseEntity<SubmissionResponse> createSubmission(@RequestBody @Valid SubmissionPayload submissionPayload) {
         Submission submission = submissionPayload.toSubmission();
-        Submission save = submissionRepository.save(submission);
-        return ResponseEntity.ok(save);
+        Submission saved = submissionRepository.save(submission);
+        return ResponseEntity.ok(new SubmissionResponse(saved));
     }
 
     @Operation(summary = "Update submission", description = "Update an existing submission with the provided details")
+    @AuthenticationApiResponses
+    @Validation400ApiResponses
+    @NotFound404ApiResponses
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successful update of submission",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = Submission.class))}),
-            @ApiResponse(responseCode = "400", description = "Invalid request payload"),
-            @ApiResponse(responseCode = "404", description = "Submission not found")
+                            schema = @Schema(implementation = Submission.class))})
     })
     @Transactional
     @PutMapping("/submissions/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUBMITTER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUBMITTER') and @resourceOwnerEvaluator.hasPermission(#id, @submissionOwnerPermission)")
     public ResponseEntity<Submission> updateSubmission(@PathVariable("id") Long id,
-                                              @RequestBody @Valid SubmissionPayload submissionPayload) {
+                                                       @RequestBody @Valid SubmissionPayload submissionPayload) {
         Submission submission = getSubmissionOrElseThrow(id);
         submission.setContent(submissionPayload.getContent());
+        //toDO
         Submission saved = submissionRepository.save(submission);
         return ResponseEntity.ok(saved);
     }
 
     @Operation(summary = "Delete submission", description = "Delete an existing submission")
+    @AuthenticationApiResponses
+    @NotFound404ApiResponses
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "204", description = "Successful deletion of submission"),
-            @ApiResponse(responseCode = "404", description = "Submission not found")
+            @ApiResponse(responseCode = "204", description = "Successful deletion of submission")
     })
     @Transactional
     @DeleteMapping("/submissions/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUBMITTER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUBMITTER') and hasPermission(#id, submissionOwnerPermission)")
     public ResponseEntity<Submission> deleteSubmission(@PathVariable("id") Long id) {
         Submission submission = getSubmissionOrElseThrow(id);
         submissionRepository.delete(submission);

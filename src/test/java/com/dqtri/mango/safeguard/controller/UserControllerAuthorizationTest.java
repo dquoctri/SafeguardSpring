@@ -4,11 +4,15 @@ import com.dqtri.mango.safeguard.common.WithMockAppUser;
 import com.dqtri.mango.safeguard.config.SecurityConfig;
 import com.dqtri.mango.safeguard.model.SafeguardUser;
 import com.dqtri.mango.safeguard.model.dto.payload.UserCreatingPayload;
+import com.dqtri.mango.safeguard.model.dto.payload.UserUpdatingPayload;
 import com.dqtri.mango.safeguard.model.dto.response.ErrorResponse;
 import com.dqtri.mango.safeguard.model.enums.Role;
 import com.dqtri.mango.safeguard.repository.UserRepository;
+import com.dqtri.mango.safeguard.security.permissions.Permission;
+import com.dqtri.mango.safeguard.security.ResourceOwnerEvaluator;
+import com.dqtri.mango.safeguard.security.permissions.UpdatableResourcePermission;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -34,6 +38,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultMatcher;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Optional;
 
@@ -45,18 +50,18 @@ import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @Nested
-@ExtendWith(SpringExtension.class)
+@ExtendWith({SpringExtension.class})
 @WebMvcTest(controllers = {UserController.class},
-        includeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = SecurityConfig.class))
+        includeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = {SecurityConfig.class}))
 public class UserControllerAuthorizationTest extends AbstractIntegrationTest {
     @MockBean
     private PasswordEncoder passwordEncoder;
     @MockBean
     private UserRepository userRepository;
-
 
     @Nested
     class RouteGetAllUsersAuthorizationIntegrationTest {
@@ -132,10 +137,10 @@ public class UserControllerAuthorizationTest extends AbstractIntegrationTest {
 
         @Test
         @WithMockUser(roles = "ADMIN")
-        void getUserById_defaultAdmin_returnPagination() throws Exception {
+        void getUserById_defaultAdmin_returnUser() throws Exception {
             when(userRepository.findById(1L)).thenReturn(Optional.of(new SafeguardUser()));
             //then
-            performRequest(status().isOk());
+            MvcResult result = performRequest(status().isOk());
         }
 
         @Test
@@ -148,20 +153,16 @@ public class UserControllerAuthorizationTest extends AbstractIntegrationTest {
         @WithMockUser(roles = {"MANAGER", "SUBMITTER", "SPECIALIST", "NONE", "REFRESH", "INVALID"})
         void getUserById_giveNonAdminRoles_thenForbidden() throws Exception {
             MvcResult mvcResult = performRequest(status().isForbidden());
-            String json = mvcResult.getResponse().getContentAsString();
-            ErrorResponse errorResponse = new ObjectMapper().readValue(json, ErrorResponse.class);
             //test
-            assertForbiddenResponse(errorResponse);
+            assertForbiddenResponse(mvcResult);
         }
 
         @Test
         @WithMockUser(authorities = {"MANAGER", "SUBMITTER", "SPECIALIST", "NONE", "REFRESH", "INVALID"})
         void getUserById_giveNonAdminAuthority_thenForbidden() throws Exception {
             MvcResult mvcResult = performRequest(status().isForbidden());
-            String json = mvcResult.getResponse().getContentAsString();
-            ErrorResponse errorResponse = new ObjectMapper().readValue(json, ErrorResponse.class);
             //test
-            assertForbiddenResponse(errorResponse);
+            assertForbiddenResponse(mvcResult);
         }
 
         @Test
@@ -170,13 +171,13 @@ public class UserControllerAuthorizationTest extends AbstractIntegrationTest {
                     .roles("MANAGER", "SUBMITTER", "SPECIALIST", "NONE", "REFRESH", "INVALID")
                     .authorities(buildAuthorities("MANAGER", "SUBMITTER", "SPECIALIST", "NONE", "REFRESH", "INVALID"));
             MvcResult mvcResult = performRequest(user, status().isForbidden());
-            String json = mvcResult.getResponse().getContentAsString();
-            ErrorResponse errorResponse = new ObjectMapper().readValue(json, ErrorResponse.class);
             //test
-            assertForbiddenResponse(errorResponse);
+            assertForbiddenResponse(mvcResult);
         }
 
-        private void assertForbiddenResponse(ErrorResponse errorResponse) {
+        private void assertForbiddenResponse(MvcResult mvcResult) throws UnsupportedEncodingException, JsonProcessingException {
+            String json = mvcResult.getResponse().getContentAsString();
+            ErrorResponse errorResponse = new ObjectMapper().readValue(json, ErrorResponse.class);
             assertThat(errorResponse).isNotNull();
             assertThat(errorResponse.getStatus()).isEqualTo(HttpStatus.FORBIDDEN);
             assertThat(errorResponse.getMessage()).isEqualTo("Access Denied");
@@ -187,10 +188,10 @@ public class UserControllerAuthorizationTest extends AbstractIntegrationTest {
                     .andExpectAll(matchers).andReturn();
         }
 
-        private MvcResult performRequest(RequestPostProcessor forbiddenProcessor,
+        private MvcResult performRequest(RequestPostProcessor processor,
                                          ResultMatcher... matchers) throws Exception {
             return mvc.perform(get(USER_ID_ROUTE)
-                    .with(forbiddenProcessor)).andExpectAll(matchers).andReturn();
+                    .with(processor)).andExpectAll(matchers).andReturn();
         }
     }
 
@@ -228,10 +229,10 @@ public class UserControllerAuthorizationTest extends AbstractIntegrationTest {
                     .andExpectAll(matchers).andReturn();
         }
 
-        private void performRequest(RequestPostProcessor forbiddenProcessor,
+        private void performRequest(RequestPostProcessor processor,
                                     ResultMatcher... matchers) throws Exception {
             mvc.perform(get(USER_PROFILE_ROUTE)
-                    .with(forbiddenProcessor)).andExpectAll(matchers).andReturn();
+                    .with(processor)).andExpectAll(matchers).andReturn();
         }
     }
 
@@ -272,10 +273,8 @@ public class UserControllerAuthorizationTest extends AbstractIntegrationTest {
         void getCreateUser_giveNonAdminRoles_thenForbidden() throws Exception {
             UserCreatingPayload userCreatingPayload = createUserCreatingPayload();
             MvcResult mvcResult = performRequest(userCreatingPayload, status().isForbidden());
-            String json = mvcResult.getResponse().getContentAsString();
-            ErrorResponse errorResponse = new ObjectMapper().readValue(json, ErrorResponse.class);
             //test
-            assertForbiddenResponse(errorResponse);
+            assertForbiddenResponse(mvcResult);
         }
 
         @Test
@@ -283,10 +282,8 @@ public class UserControllerAuthorizationTest extends AbstractIntegrationTest {
         void getCreateUser_giveNonAdminAuthority_thenForbidden() throws Exception {
             UserCreatingPayload userCreatingPayload = createUserCreatingPayload();
             MvcResult mvcResult = performRequest(userCreatingPayload, status().isForbidden());
-            String json = mvcResult.getResponse().getContentAsString();
-            ErrorResponse errorResponse = new ObjectMapper().readValue(json, ErrorResponse.class);
             //test
-            assertForbiddenResponse(errorResponse);
+            assertForbiddenResponse(mvcResult);
         }
 
         @Test
@@ -296,13 +293,13 @@ public class UserControllerAuthorizationTest extends AbstractIntegrationTest {
                     .roles("MANAGER", "SUBMITTER", "SPECIALIST", "NONE", "REFRESH", "INVALID")
                     .authorities(buildAuthorities("MANAGER", "SUBMITTER", "SPECIALIST", "NONE", "REFRESH", "INVALID"));
             MvcResult mvcResult = performRequest(userCreatingPayload, user, status().isForbidden());
-            String json = mvcResult.getResponse().getContentAsString();
-            ErrorResponse errorResponse = new ObjectMapper().readValue(json, ErrorResponse.class);
             //test
-            assertForbiddenResponse(errorResponse);
+            assertForbiddenResponse(mvcResult);
         }
 
-        private void assertForbiddenResponse(ErrorResponse errorResponse) {
+        private void assertForbiddenResponse(MvcResult mvcResult) throws UnsupportedEncodingException, JsonProcessingException {
+            String json = mvcResult.getResponse().getContentAsString();
+            ErrorResponse errorResponse = new ObjectMapper().readValue(json, ErrorResponse.class);
             assertThat(errorResponse).isNotNull();
             assertThat(errorResponse.getStatus()).isEqualTo(HttpStatus.FORBIDDEN);
             assertThat(errorResponse.getMessage()).isEqualTo("Access Denied");
@@ -333,12 +330,82 @@ public class UserControllerAuthorizationTest extends AbstractIntegrationTest {
         }
 
         private MvcResult performRequest(UserCreatingPayload userCreatingPayload,
-                                         RequestPostProcessor forbiddenProcessor,
+                                         RequestPostProcessor processor,
                                          ResultMatcher... matchers) throws Exception {
             return mvc.perform(post(USER_ROUTE)
                     .contentType(MediaType.APPLICATION_JSON_VALUE)
                     .content(createPayloadJson(userCreatingPayload))
-                    .with(forbiddenProcessor))
+                    .with(processor))
+                    .andExpectAll(matchers).andReturn();
+        }
+    }
+
+    @Nested
+    class RoutUpdateUserAuthorizationIntegrationTest {
+
+        private static final String USER_ROUTE = "/users/1";
+
+        @MockBean
+        private UpdatableResourcePermission isUpdatableResource;
+
+        @MockBean
+        private Permission permission;
+
+        @MockBean
+        private ResourceOwnerEvaluator resourceOwnerEvaluator;
+
+
+
+        @Captor
+        ArgumentCaptor<SafeguardUser> userArgumentCaptor;
+
+        @BeforeEach
+        public void setup() {
+            passwordEncoder = new BCryptPasswordEncoder();
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMIN")
+        void updateUser_defaultAdmin_thenUpdated() throws Exception {
+            when(isUpdatableResource.isAllowed(any(), any())).thenReturn(true);
+            when(permission.isAllowed(any(), any())).thenReturn(true);
+            when(resourceOwnerEvaluator.hasPermission(any(), any(), permission)).thenReturn(true);
+//            when(resourceOwnerEvaluator.hasPermission(any(), any(), any(), any())).thenReturn(true);
+            when(userRepository.findById(1L)).thenReturn(Optional.of(new SafeguardUser()));
+            UserUpdatingPayload userUpdatingPayload = createUserUpdatingPayload();
+            //then
+            performRequest(userUpdatingPayload, status().isOk());
+        }
+
+        private SafeguardUser createSafeguardUser() {
+            SafeguardUser safeguardUser = new SafeguardUser();
+            safeguardUser.setEmail("exiting@mango.dqtri.com");
+            safeguardUser.setPassword(passwordEncoder.encode("exiting"));
+            safeguardUser.setRole(Role.MANAGER);
+            return safeguardUser;
+        }
+
+        private UserUpdatingPayload createUserUpdatingPayload(){
+            UserUpdatingPayload userUpdatingPayload = new UserUpdatingPayload();
+            userUpdatingPayload.setRole(Role.MANAGER);
+            return userUpdatingPayload;
+        }
+
+        private MvcResult performRequest(UserUpdatingPayload userUpdatingPayload,
+                                         ResultMatcher... matchers) throws Exception {
+            return mvc.perform(put(USER_ROUTE)
+                            .contentType(MediaType.APPLICATION_JSON_VALUE)
+                            .content(createPayloadJson(userUpdatingPayload)))
+                    .andExpectAll(matchers).andReturn();
+        }
+
+        private MvcResult performRequest(UserUpdatingPayload userUpdatingPayload,
+                                         RequestPostProcessor processor,
+                                         ResultMatcher... matchers) throws Exception {
+            return mvc.perform(put(USER_ROUTE)
+                            .contentType(MediaType.APPLICATION_JSON_VALUE)
+                            .content(createPayloadJson(userUpdatingPayload))
+                            .with(processor))
                     .andExpectAll(matchers).andReturn();
         }
     }

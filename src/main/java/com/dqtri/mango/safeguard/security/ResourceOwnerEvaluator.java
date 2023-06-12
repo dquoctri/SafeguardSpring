@@ -1,5 +1,6 @@
-package com.dqtri.mango.safeguard.security.permissions;
+package com.dqtri.mango.safeguard.security;
 
+import com.dqtri.mango.safeguard.security.permissions.Permission;
 import org.springframework.security.access.PermissionEvaluator;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
