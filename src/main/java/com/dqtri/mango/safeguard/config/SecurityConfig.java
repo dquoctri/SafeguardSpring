@@ -1,6 +1,7 @@
 package com.dqtri.mango.safeguard.config;
 
 import com.dqtri.mango.safeguard.repository.BlackListRefreshTokenRepository;
+import com.dqtri.mango.safeguard.security.ResourceOwnerEvaluator;
 import com.dqtri.mango.safeguard.security.access.AccessAuthenticationFilter;
 import com.dqtri.mango.safeguard.security.CustomUnauthorizedEntryPoint;
 import com.dqtri.mango.safeguard.security.refresh.RefreshAuthenticationFilter;
@@ -8,7 +9,6 @@ import jakarta.servlet.Filter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.access.PermissionEvaluator;
 import org.springframework.security.access.expression.method.DefaultMethodSecurityExpressionHandler;
 import org.springframework.security.access.expression.method.MethodSecurityExpressionHandler;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -43,7 +43,6 @@ public class SecurityConfig {
     private final AuthenticationProvider accessAuthenticationProvider;
     private final UserDetailsService userDetailsService;
     private final BlackListRefreshTokenRepository blackListRefreshTokenRepository;
-    private final PermissionEvaluator permissionEvaluator;
 
     @Bean
     public SecurityFilterChain authorizeFilterChain(HttpSecurity http) throws Exception {
@@ -135,7 +134,7 @@ public class SecurityConfig {
     @Bean
     public MethodSecurityExpressionHandler expressionHandler() {
         var expressionHandler = new DefaultMethodSecurityExpressionHandler();
-        expressionHandler.setPermissionEvaluator(permissionEvaluator);
+        expressionHandler.setPermissionEvaluator(new ResourceOwnerEvaluator());
         return expressionHandler;
     }
 
