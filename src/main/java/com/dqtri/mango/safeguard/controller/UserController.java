@@ -64,7 +64,7 @@ public class UserController {
     })
     @Transactional(readOnly = true)
     @GetMapping("/users")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SPECIALIST', 'SUBMITTER')")
     public ResponseEntity<Page<UserResponse>> getUsers(@Valid PageCriteria pageCriteria) {
         PageRequest pageable = pageCriteria.toPageable("pk");
         Page<SafeguardUser> page = userRepository.findAll(pageable);
@@ -82,7 +82,7 @@ public class UserController {
                             schema = @Schema(implementation = UserResponse.class))})
     })
     @GetMapping("/users/{userId}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SPECIALIST', 'SUBMITTER')")
     public ResponseEntity<UserResponse> getUser(@PathVariable("userId") Long userId) {
         SafeguardUser safeguardUser = getUserOrElseThrow(userId);
         return ResponseEntity.ok(new UserResponse(safeguardUser));
@@ -98,7 +98,7 @@ public class UserController {
     @GetMapping("/users/me")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<UserResponse> getMyProfiles(@UserPrincipal AppUserDetails currentUser) {
-        if (currentUser != null){
+        if (currentUser != null) {
             SafeguardUser safeguardUser = currentUser.getSafeguardUser();
             return ResponseEntity.ok(new UserResponse(safeguardUser));
         }
@@ -121,7 +121,7 @@ public class UserController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserResponse> createUser(@RequestBody @Valid UserCreatingPayload payload) {
         validateUniqueEmail(payload.getEmail());
-        SafeguardUser saved = userRepository.save(createCoreUser(payload));
+        SafeguardUser saved = userRepository.save(createSafeguardUser(payload));
         return new ResponseEntity<>(new UserResponse(saved), HttpStatus.CREATED);
     }
 
@@ -131,7 +131,7 @@ public class UserController {
         }
     }
 
-    private SafeguardUser createCoreUser(@NotNull UserCreatingPayload payload) {
+    private SafeguardUser createSafeguardUser(@NotNull UserCreatingPayload payload) {
         SafeguardUser user = new SafeguardUser();
         user.setEmail(payload.getEmail());
         user.setPassword(passwordEncoder.encode(payload.getPassword()));
@@ -151,7 +151,7 @@ public class UserController {
     @PutMapping("/users/{userId}")
     @PreAuthorize("hasRole('ADMIN') and hasPermission(#userId, @updatableResource)")
     public ResponseEntity<UserResponse> updateUser(@PathVariable("userId") Long userId,
-                                                    @Valid @RequestBody UserUpdatingPayload payload) {
+                                                   @Valid @RequestBody UserUpdatingPayload payload) {
         SafeguardUser user = getUserOrElseThrow(userId);
         user.setRole(payload.getRole());
         return ResponseEntity.ok(new UserResponse(user));
@@ -165,7 +165,7 @@ public class UserController {
             @ApiResponse(responseCode = "200", description = "Successful update of user password"),
     })
     @PutMapping("/users/{userId}/password")
-    @PreAuthorize("hasRole('ADMIN') and hasPermission('#userId', '@nonAdminResource')")
+    @PreAuthorize("hasRole('ADMIN') and hasPermission(#userId, @updatableResource)")
     public ResponseEntity<Void> updateUserPassword(@PathVariable("userId") Long userId,
                                                    @Valid @RequestBody ResetPasswordPayload payload) {
         SafeguardUser user = getUserOrElseThrow(userId);
@@ -180,7 +180,7 @@ public class UserController {
             @ApiResponse(responseCode = "204", description = "Successful deletion of user"),
     })
     @DeleteMapping("/users/{userId}")
-    @PreAuthorize("hasRole('ADMIN') and hasPermission('#userId', 'nonAdminResource')")
+    @PreAuthorize("hasRole('ADMIN') and hasPermission(#userId, @updatableResource)")
     public ResponseEntity<Void> deleteUser(@PathVariable("userId") Long userId) {
         SafeguardUser user = getUserOrElseThrow(userId);
         user.setRole(Role.NONE);

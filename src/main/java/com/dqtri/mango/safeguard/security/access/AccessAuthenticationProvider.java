@@ -36,8 +36,8 @@ public class AccessAuthenticationProvider implements AuthenticationProvider {
     private void assertAuthentication(Authentication authentication) {
         Assert.notNull(authentication, "Authentication is missing");
         Assert.notNull(authentication.getPrincipal(), "Authentication principal is missing");
-        Assert.isInstanceOf(AccessAuthenticationToken.class, authentication, "Only Accepts Core Token");
-        Assert.isTrue(authentication.getName().startsWith(BEARER), "Only Accepts Bearer Token");
+        Assert.isInstanceOf(AccessAuthenticationToken.class, authentication, "Only accepts access token");
+        Assert.isTrue(authentication.getName().startsWith(BEARER), "Only accepts bearer token");
     }
 
     @Override

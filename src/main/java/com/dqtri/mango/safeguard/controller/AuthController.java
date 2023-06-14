@@ -88,7 +88,7 @@ public class AuthController {
     @Transactional
     public ResponseEntity<SafeguardUser> register(@RequestBody @Valid RegisterPayload register) {
         checkConflictUserEmail(register.getEmail());
-        SafeguardUser safeguardUser = createCoreUser(register);
+        SafeguardUser safeguardUser = createSafeguardUser(register);
         SafeguardUser saved = userRepository.save(safeguardUser);
         cleanLoginAttempt(register.getEmail());
         return ResponseEntity.ok(saved);
@@ -105,7 +105,7 @@ public class AuthController {
         }
     }
 
-    private SafeguardUser createCoreUser(@NotNull RegisterPayload register) {
+    private SafeguardUser createSafeguardUser(@NotNull RegisterPayload register) {
         SafeguardUser user = new SafeguardUser();
         user.setEmail(register.getEmail());
         user.setPassword(passwordEncoder.encode(register.getPassword()));
