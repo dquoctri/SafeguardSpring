@@ -293,14 +293,11 @@ public class UserControllerAuthorizationTest extends AbstractIntegrationTest {
         }
 
         private void performRequest(ResultMatcher... matchers) throws Exception {
-            mvc.perform(get(USER_PROFILE_ROUTE))
-                    .andExpectAll(matchers).andReturn();
+            mvc.perform(get(USER_PROFILE_ROUTE)).andExpectAll(matchers);
         }
 
-        private void performRequest(RequestPostProcessor processor,
-                                    ResultMatcher... matchers) throws Exception {
-            mvc.perform(get(USER_PROFILE_ROUTE)
-                    .with(processor)).andExpectAll(matchers).andReturn();
+        private void performRequest(RequestPostProcessor processor, ResultMatcher... matchers) throws Exception {
+            mvc.perform(get(USER_PROFILE_ROUTE).with(processor)).andExpectAll(matchers);
         }
     }
 

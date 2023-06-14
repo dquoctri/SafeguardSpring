@@ -4,6 +4,7 @@ import com.dqtri.mango.safeguard.annotation.AuthenticationApiResponses;
 import com.dqtri.mango.safeguard.annotation.NotFound404ApiResponses;
 import com.dqtri.mango.safeguard.annotation.Validation400ApiResponses;
 import com.dqtri.mango.safeguard.exception.ConflictException;
+import com.dqtri.mango.safeguard.model.LoginAttempt;
 import com.dqtri.mango.safeguard.model.SafeguardUser;
 import com.dqtri.mango.safeguard.model.dto.PageCriteria;
 import com.dqtri.mango.safeguard.model.dto.payload.ResetPasswordPayload;
@@ -12,6 +13,7 @@ import com.dqtri.mango.safeguard.model.dto.payload.UserUpdatingPayload;
 import com.dqtri.mango.safeguard.model.dto.response.ErrorResponse;
 import com.dqtri.mango.safeguard.model.dto.response.UserResponse;
 import com.dqtri.mango.safeguard.model.enums.Role;
+import com.dqtri.mango.safeguard.repository.LoginAttemptRepository;
 import com.dqtri.mango.safeguard.repository.UserRepository;
 import com.dqtri.mango.safeguard.security.AppUserDetails;
 import com.dqtri.mango.safeguard.security.UserPrincipal;
@@ -44,6 +46,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequiredArgsConstructor
@@ -53,6 +56,8 @@ public class UserController {
 
     private final PasswordEncoder passwordEncoder;
     private final UserRepository userRepository;
+
+    private final LoginAttemptRepository loginAttemptRepository;
 
     @Operation(summary = "Get users", description = "Retrieve a paginated list of users")
     @AuthenticationApiResponses
@@ -121,6 +126,7 @@ public class UserController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserResponse> createUser(@RequestBody @Valid UserCreatingPayload payload) {
         validateUniqueEmail(payload.getEmail());
+        cleanLoginAttempt(payload.getEmail());
         SafeguardUser saved = userRepository.save(createSafeguardUser(payload));
         return new ResponseEntity<>(new UserResponse(saved), HttpStatus.CREATED);
     }
@@ -129,6 +135,11 @@ public class UserController {
         if (userRepository.existsByEmail(email)) {
             throw new ConflictException(String.format("%s is already in use", email));
         }
+    }
+
+    private void cleanLoginAttempt(String email){
+        Optional<LoginAttempt> byEmail = loginAttemptRepository.findByEmail(email);
+        byEmail.ifPresent(loginAttemptRepository::delete);
     }
 
     private SafeguardUser createSafeguardUser(@NotNull UserCreatingPayload payload) {

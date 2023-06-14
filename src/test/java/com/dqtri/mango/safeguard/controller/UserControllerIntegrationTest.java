@@ -7,12 +7,18 @@ package com.dqtri.mango.safeguard.controller;
 
 import com.dqtri.mango.safeguard.common.WithMockAppUser;
 import com.dqtri.mango.safeguard.config.SecurityConfig;
+import com.dqtri.mango.safeguard.model.LoginAttempt;
 import com.dqtri.mango.safeguard.model.SafeguardUser;
-import com.dqtri.mango.safeguard.model.dto.response.ErrorResponse;
+import com.dqtri.mango.safeguard.model.dto.payload.UserCreatingPayload;
+import com.dqtri.mango.safeguard.model.dto.payload.UserUpdatingPayload;
 import com.dqtri.mango.safeguard.model.dto.response.UserResponse;
 import com.dqtri.mango.safeguard.model.enums.Role;
+import com.dqtri.mango.safeguard.repository.LoginAttemptRepository;
 import com.dqtri.mango.safeguard.repository.UserRepository;
+import com.dqtri.mango.safeguard.security.AppUserDetails;
+import com.dqtri.mango.safeguard.security.permissions.UpdatableResourcePermission;
 import com.dqtri.mango.safeguard.util.PageDeserializer;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
@@ -20,6 +26,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.ComponentScan;
@@ -29,30 +40,46 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultMatcher;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @Nested
 @ExtendWith(SpringExtension.class)
 @WebMvcTest(controllers = {UserController.class},
-        includeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = SecurityConfig.class))
+        includeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE,
+                classes = {SecurityConfig.class, UpdatableResourcePermission.class}))
 public class UserControllerIntegrationTest extends AbstractIntegrationTest {
     @MockBean
     private PasswordEncoder passwordEncoder;
     @MockBean
     private UserRepository userRepository;
+    @MockBean
+    private LoginAttemptRepository loginAttemptRepository;
 
     @Nested
     class RouteGetAllUsersFeatureIntegrationTest {
@@ -246,5 +273,306 @@ public class UserControllerIntegrationTest extends AbstractIntegrationTest {
         }
     }
 
+    @Nested
+    class RouteGetProfilesFeatureIntegrationTest {
+        private static final String USER_PROFILE_ROUTE = "/users/me";
 
+        @Test
+        @WithMockAppUser(email = "admin@dqtri.com", role = Role.ADMIN)
+        void getProfiles_givenAdmin_returnUserResponse() throws Exception {
+            MvcResult result = performRequest(status().isOk());
+            assertCurrentUserResponse(result, "admin@dqtri.com", Role.ADMIN);
+        }
+
+        @Test
+        @WithMockAppUser(email = "manager@dqtri.com", role = Role.MANAGER)
+        void getProfiles_givenManager_returnUserResponse() throws Exception {
+            MvcResult result = performRequest(status().isOk());
+            assertCurrentUserResponse(result, "manager@dqtri.com", Role.MANAGER);
+        }
+
+        @Test
+        @WithMockAppUser(email = "specialist@dqtri.com", role = Role.SPECIALIST)
+        void getProfiles_givenSpecialist_returnUserResponse() throws Exception {
+            MvcResult result = performRequest(status().isOk());
+            assertCurrentUserResponse(result, "specialist@dqtri.com", Role.SPECIALIST);
+        }
+
+        @Test
+        @WithMockAppUser(email = "submitter@dqtri.com", role = Role.SUBMITTER)
+        void getProfiles_givenSubmitter_returnUserResponse() throws Exception {
+            MvcResult result = performRequest(status().isOk());
+            assertCurrentUserResponse(result, "submitter@dqtri.com", Role.SUBMITTER);
+        }
+
+        @Test
+        @WithMockAppUser(email = "none@dqtri.com", role = Role.NONE)
+        void getProfiles_givenNone_returnUserResponse() throws Exception {
+            MvcResult result = performRequest(status().isOk());
+            assertCurrentUserResponse(result, "none@dqtri.com", Role.NONE);
+        }
+
+        @ParameterizedTest
+        @CsvSource({
+                "admin@dqtri.com, ADMIN",
+                "manager@dqtri.com, MANAGER",
+                "specialist@dqtri.com, SPECIALIST",
+                "submitter@dqtri.com, SUBMITTER",
+                "none@dqtri.com, NONE",
+        })
+        void getProfiles_withProcessor_thenOk(String email, Role role) throws Exception {
+            passwordEncoder = new BCryptPasswordEncoder();
+            SafeguardUser submitterUser = createSafeguardUser(email, role);
+            AppUserDetails appUserDetails = new AppUserDetails(submitterUser);
+            RequestPostProcessor user = user(appUserDetails);
+            MvcResult result = performRequest(user, status().isOk());
+            assertCurrentUserResponse(result, submitterUser.getEmail(), submitterUser.getRole());
+        }
+
+        private void assertCurrentUserResponse(MvcResult result, String email, Role role) throws UnsupportedEncodingException, JsonProcessingException {
+            String json = result.getResponse().getContentAsString();
+            UserResponse userResponse = new ObjectMapper().readValue(json, UserResponse.class);
+            assertThat(userResponse).isNotNull();
+            assertThat(userResponse.getEmail()).isEqualTo(email);
+            assertThat(userResponse.getRole()).isEqualTo(role);
+        }
+
+        private MvcResult performRequest(ResultMatcher... matchers) throws Exception {
+            return mvc.perform(get(USER_PROFILE_ROUTE))
+                    .andExpectAll(matchers).andReturn();
+        }
+
+        private MvcResult performRequest(RequestPostProcessor processor,
+                                    ResultMatcher... matchers) throws Exception {
+            return mvc.perform(get(USER_PROFILE_ROUTE)
+                    .with(processor)).andExpectAll(matchers).andReturn();
+        }
+    }
+
+    @Nested
+    class RouteCreateUserFeatureIntegrationTest {
+        private static final String USER_ROUTE = "/users";
+
+        @Captor
+        ArgumentCaptor<SafeguardUser> userArgumentCaptor;
+
+        @ParameterizedTest
+        @CsvSource({
+                "admin@dqtri.com, ADMIN",
+                "manager@dqtri.com, MANAGER",
+                "specialist@dqtri.com, SPECIALIST",
+                "submitter@dqtri.com, SUBMITTER",
+                "none@dqtri.com, NONE",
+        })
+        @WithMockUser(roles = "ADMIN")
+        void createUser_createAppUser_returnCreated(String email, Role role) throws Exception {
+            when(userRepository.existsByEmail(anyString())).thenReturn(false);
+            when(loginAttemptRepository.findByEmail(anyString())).thenReturn(Optional.empty());
+            SafeguardUser submitterUser = createSafeguardUser(email, role);
+            when(userRepository.save(any())).thenReturn(submitterUser);
+            UserCreatingPayload userCreatingPayload = createUserCreatingPayload(email, role);
+            //then
+            MvcResult result = performRequest(userCreatingPayload, status().isCreated());
+            //test
+            assertUserResponse(result, email, role);
+            verify(userRepository).save(userArgumentCaptor.capture());
+            SafeguardUser value = userArgumentCaptor.getValue();
+            assertThat(value.getEmail()).isEqualTo(email);
+            assertThat(value.getRole()).isEqualTo(role);
+
+        }
+
+        @ParameterizedTest
+        @CsvSource({
+                "admin@dqtri.com, ADMIN",
+                "manager@dqtri.com, MANAGER",
+                "specialist@dqtri.com, SPECIALIST",
+                "submitter@dqtri.com, SUBMITTER",
+                "none@dqtri.com, NONE",
+        })
+        @WithMockUser(roles = "ADMIN")
+        void createUser_givenExistedLoginAttempt_returnCreated(String email, Role role) throws Exception {
+            when(userRepository.existsByEmail(anyString())).thenReturn(false);
+            when(loginAttemptRepository.findByEmail(anyString()))
+                    .thenReturn(Optional.of(new LoginAttempt(email)));
+            SafeguardUser submitterUser = createSafeguardUser(email, role);
+            when(userRepository.save(any())).thenReturn(submitterUser);
+            UserCreatingPayload userCreatingPayload = createUserCreatingPayload(email, role);
+            //then
+            MvcResult result = performRequest(userCreatingPayload, status().isCreated());
+            //test
+            assertUserResponse(result, email, role);
+            verify(loginAttemptRepository, times(1)).delete(any());
+            verify(userRepository).save(userArgumentCaptor.capture());
+            SafeguardUser value = userArgumentCaptor.getValue();
+            assertThat(value.getEmail()).isEqualTo(email);
+            assertThat(value.getRole()).isEqualTo(role);
+        }
+
+        private void assertUserResponse(MvcResult result, String email, Role role) throws UnsupportedEncodingException, JsonProcessingException {
+            String json = result.getResponse().getContentAsString();
+            UserResponse userResponse = new ObjectMapper().readValue(json, UserResponse.class);
+            assertThat(userResponse).isNotNull();
+            assertThat(userResponse.getEmail()).isEqualTo(email);
+            assertThat(userResponse.getRole()).isEqualTo(role);
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMIN")
+        void createUser_givenEmptyPayload_thenBadRequest() throws Exception {
+            UserCreatingPayload userCreatingPayload = new UserCreatingPayload();
+            //then
+            performRequest(userCreatingPayload, status().isBadRequest());
+            //test
+            verify(userRepository, never()).save(any());
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {"invalidEmailFormat", "invalidEmailFormat@", "@invalidEmailFormat", "mangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomangomango@dqtri.com"})
+        @WithMockUser(roles = "ADMIN")
+        void createUser_givenInvalidEmailFormat_thenBadRequest(String invalidEmail) throws Exception {
+            UserCreatingPayload userCreatingPayload = new UserCreatingPayload();
+            userCreatingPayload.setEmail(invalidEmail);
+            userCreatingPayload.setPassword("mango");
+            //then
+            performRequest(userCreatingPayload, status().isBadRequest());
+            //test
+            verify(userRepository, never()).save(any());
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMIN")
+        void createUser_givenNonPassword_thenBadRequest() throws Exception {
+            UserCreatingPayload userCreatingPayload = new UserCreatingPayload();
+            userCreatingPayload.setEmail("newcomer@mango.dqtri.com");
+            //then
+            performRequest(userCreatingPayload, status().isBadRequest());
+            //test
+            verify(userRepository, never()).save(any());
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {"st", "", "       ", "more_than_24_characters_too_long_password"})
+        @WithMockUser(roles = "ADMIN")
+        void createUser_givenInvalidPasswordFormat_thenBadRequest(String password) throws Exception {
+            UserCreatingPayload userCreatingPayload = new UserCreatingPayload();
+            userCreatingPayload.setEmail("newcomer@mango.dqtri.com");
+            userCreatingPayload.setPassword(password);
+            //then
+            performRequest(userCreatingPayload, status().isBadRequest());
+            //test
+            verify(userRepository, never()).save(any());
+        }
+
+
+        @Test
+        @WithMockUser(roles = "ADMIN")
+        void createUser_mockExitedEmail_thenThrowConflictException() throws Exception {
+            UserCreatingPayload userCreatingPayload = createUserCreatingPayload("mango@dqtri.com", Role.ADMIN);
+            when(userRepository.existsByEmail(anyString())).thenReturn(true);
+            //then
+            performRequest(userCreatingPayload, status().isConflict());
+            //test
+            verify(userRepository, never()).save(any());
+        }
+
+        private UserCreatingPayload createUserCreatingPayload(String email, Role role){
+            UserCreatingPayload userCreatingPayload = new UserCreatingPayload();
+            userCreatingPayload.setEmail(email);
+            userCreatingPayload.setPassword("newcomer");
+            userCreatingPayload.setRole(role);
+            return userCreatingPayload;
+        }
+
+        private MvcResult performRequest(UserCreatingPayload userCreatingPayload,
+                                         ResultMatcher... matchers) throws Exception {
+            return mvc.perform(post(USER_ROUTE)
+                            .contentType(MediaType.APPLICATION_JSON_VALUE)
+                            .content(createPayloadJson(userCreatingPayload)))
+                    .andExpectAll(matchers).andReturn();
+        }
+    }
+
+    @Nested
+    class RoutUpdateUserFeatureIntegrationTest {
+
+        private static final String USER_ROUTE = "/users/{userId}";
+
+        @ParameterizedTest
+        @CsvSource({
+                "1, existing@dqtri.com, ADMIN",
+                "2, manager@dqtri.com, MANAGER",
+                "3, specialist@dqtri.com, SPECIALIST",
+                "4, submitter@dqtri.com, SUBMITTER",
+                "5, none@dqtri.com, NONE",
+        })
+        @WithMockUser(roles = "ADMIN")
+        void updateUser_updateRole_thenUpdated(long id, String email, Role role) throws Exception {
+            SafeguardUser submitterUser = createSafeguardUser(email, Role.NONE);
+            when(userRepository.findById(id)).thenReturn(Optional.of(submitterUser));
+            UserUpdatingPayload userUpdatingPayload = createUserUpdatingPayload(role);
+            //then
+            MvcResult result = performRequest(id, userUpdatingPayload, status().isOk());
+            assertUserResponse(result, email, role);
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMIN")
+        void updateUser_nonExistingUser_thenNotFound() throws Exception {
+            when(userRepository.findById(any())).thenReturn(Optional.empty());
+            UserUpdatingPayload userUpdatingPayload = createUserUpdatingPayload(Role.SUBMITTER);
+            //then
+            performRequest(4L, userUpdatingPayload, status().isNotFound());
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMIN")
+        void updateUser_emptyBody_thenUpdated() throws Exception {
+            UserUpdatingPayload userUpdatingPayload = new UserUpdatingPayload();
+            //then
+            MvcResult result = performRequest(5L, userUpdatingPayload, status().isBadRequest());
+            //test
+            assertBadRequest(result);
+        }
+
+        private UserUpdatingPayload createUserUpdatingPayload(Role role) {
+            UserUpdatingPayload userUpdatingPayload = new UserUpdatingPayload();
+            userUpdatingPayload.setRole(role);
+            return userUpdatingPayload;
+        }
+
+        private void assertUserResponse(MvcResult result, String email, Role role) throws UnsupportedEncodingException, JsonProcessingException {
+            String json = result.getResponse().getContentAsString();
+            UserResponse userResponse = new ObjectMapper().readValue(json, UserResponse.class);
+            assertThat(userResponse).isNotNull();
+            assertThat(userResponse.getEmail()).isEqualTo(email);
+            assertThat(userResponse.getRole()).isEqualTo(role);
+        }
+
+        private void assertBadRequest(MvcResult result) throws UnsupportedEncodingException, JsonProcessingException {
+            String json = result.getResponse().getContentAsString();
+            ProblemDetail problemDetail = new ObjectMapper().readValue(json, ProblemDetail.class);
+            assertThat(problemDetail).isNotNull();
+            assertThat(problemDetail.getStatus()).isEqualTo(400);
+            assertThat(problemDetail.getTitle()).isEqualTo("Bad Request");
+            assertThat(problemDetail.getDetail()).isEqualTo("Invalid request content.");
+        }
+
+        private MvcResult performRequest(long userId,
+                                         UserUpdatingPayload userUpdatingPayload,
+                                         ResultMatcher... matchers) throws Exception {
+            return mvc.perform(put(USER_ROUTE, userId)
+                            .contentType(MediaType.APPLICATION_JSON_VALUE)
+                            .content(createPayloadJson(userUpdatingPayload)))
+                    .andExpectAll(matchers).andReturn();
+        }
+    }
+
+    private SafeguardUser createSafeguardUser(String email, Role role) {
+        SafeguardUser safeguardUser = new SafeguardUser();
+        safeguardUser.setEmail(email);
+        safeguardUser.setPassword(passwordEncoder.encode("******"));
+        safeguardUser.setRole(role);
+        return safeguardUser;
+    }
 }

@@ -37,7 +37,6 @@ import org.springframework.http.MediaType;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -74,10 +73,6 @@ public class AuthControllerIntegrationTest extends AbstractIntegrationTest {
     private UserRepository userRepository;
     @MockBean
     private LoginAttemptRepository loginAttemptRepository;
-    @BeforeEach
-    public void setup() {
-        passwordEncoder = new BCryptPasswordEncoder();
-    }
 
     @Nested
     class RegisterIntegrationTest {
