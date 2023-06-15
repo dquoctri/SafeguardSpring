@@ -1,8 +1,8 @@
 package com.dqtri.mango.safeguard.model.dto.response;
 
-import com.dqtri.mango.safeguard.model.SafeguardUser;
 import com.dqtri.mango.safeguard.model.Submission;
 import com.dqtri.mango.safeguard.model.enums.Status;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -12,7 +12,9 @@ import java.util.List;
 @Setter
 @Getter
 @NoArgsConstructor
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class SubmissionResponse {
+    private long id;
     private String content;
     private Status status;
     private UserResponse submitter;
@@ -20,10 +22,13 @@ public class SubmissionResponse {
     private String comment;
 
     public SubmissionResponse(Submission submission) {
+        this.id = submission.getPk();
         this.content = submission.getContent();
         this.status = submission.getStatus();
         this.submitter = new UserResponse(submission.getSubmitter());
-        this.assignedUser = new UserResponse(submission.getAssignedUser());
+        if (submission.getAssignedUser() != null) {
+            this.assignedUser = new UserResponse(submission.getAssignedUser());
+        }
         this.comment = submission.getComment();
     }
 

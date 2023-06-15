@@ -1,0 +1,1157 @@
+{
+	"info": {
+		"_postman_id": "19b49008-8857-403f-ac76-7b07bfc30056",
+		"name": "Safeguard",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "4529513"
+	},
+	"item": [
+		{
+			"name": "Admin1",
+			"item": [
+				{
+					"name": "Login Admin1",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"    pm.expect(pm.response.code).to.eql(200);\r",
+									"    pm.response.to.be.ok;\r",
+									"    pm.response.to.be.withBody;\r",
+									"    pm.response.to.be.json;\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response body is refresh and access tokens\", () => {\r",
+									"    pm.response.to.be.ok;\r",
+									"    pm.response.to.be.withBody;\r",
+									"    pm.response.to.be.json;\r",
+									"\r",
+									"    const responseJson = pm.response.json();\r",
+									"    pm.expect(responseJson.refreshToken).to.be.a('string');\r",
+									"    postman.setEnvironmentVariable('admin1_refresh_token', responseJson.refreshToken);\r",
+									"    pm.expect(responseJson.accessToken).to.be.a('string');\r",
+									"    postman.setEnvironmentVariable('admin1_access_token', responseJson.accessToken);\r",
+									"});\r",
+									"\r",
+									"var wms = postman.getEnvironmentVariable(\"waiting_time_in_ms\");\r",
+									"pm.test(\"Response time is less than \"+wms+\"ms\", () => {\r",
+									"  pm.expect(pm.response.responseTime).to.be.below(parseInt(wms));\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\": \"{{admin1_email}}\",\r\n    \"password\": \"{{admin1_password}}\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_api_url}}/auth/login",
+							"host": [
+								"{{base_api_url}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Admin1 Access Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"    pm.expect(pm.response.code).to.eql(200);\r",
+									"    pm.response.to.be.ok;\r",
+									"    pm.response.to.be.withBody;\r",
+									"    pm.response.to.be.json;\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response body is refresh and access tokens\", () => {\r",
+									"    pm.response.to.be.ok;\r",
+									"    pm.response.to.be.withBody;\r",
+									"    pm.response.to.be.json;\r",
+									"\r",
+									"    const responseJson = pm.response.json();\r",
+									"    pm.expect(responseJson.accessToken).to.be.a('string');\r",
+									"    postman.setEnvironmentVariable('admin1_access_token', responseJson.accessToken);\r",
+									"});\r",
+									"\r",
+									"var wms = postman.getEnvironmentVariable(\"waiting_time_in_ms\");\r",
+									"pm.test(\"Response time is less than \"+wms+\"ms\", () => {\r",
+									"  pm.expect(pm.response.responseTime).to.be.below(parseInt(wms));\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin1_refresh_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_api_url}}/auth/refresh",
+							"host": [
+								"{{base_api_url}}"
+							],
+							"path": [
+								"auth",
+								"refresh"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Admin Submission",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"    pm.expect(pm.response.code).to.eql(200);\r",
+									"    pm.response.to.be.ok;\r",
+									"    pm.response.to.be.withBody;\r",
+									"    pm.response.to.be.json;\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response body is a submission\", () => {\r",
+									"    pm.response.to.be.ok;\r",
+									"    pm.response.to.be.withBody;\r",
+									"    pm.response.to.be.json;\r",
+									"\r",
+									"    const responseJson = pm.response.json();\r",
+									"    pm.expect(responseJson.id).to.be.a('number');\r",
+									"    postman.setEnvironmentVariable('admin1_submission_id', responseJson.id);\r",
+									"    pm.expect(responseJson.content).to.be.a('string');\r",
+									"    pm.expect(responseJson.status).to.eql('AWAITING_APPROVAL');\r",
+									"    pm.expect(responseJson.submitter.email).to.eql(postman.getEnvironmentVariable(\"admin1_email\"));\r",
+									"});\r",
+									"\r",
+									"var wms = postman.getEnvironmentVariable(\"waiting_time_in_ms\");\r",
+									"pm.test(\"Response time is less than \"+wms+\"ms\", () => {\r",
+									"  pm.expect(pm.response.responseTime).to.be.below(parseInt(wms));\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin1_access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"content\": \"submit a document\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_api_url}}/submissions",
+							"host": [
+								"{{base_api_url}}"
+							],
+							"path": [
+								"submissions"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Cleanup",
+			"item": [
+				{
+					"name": "Cleanup Test User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Successful delete request\", () => {\r",
+									"    pm.response.to.have.status(\"No Content\");\r",
+									"    pm.expect(pm.response.code).to.be.oneOf([204]);\r",
+									"});\r",
+									"\r",
+									"var wms = postman.getEnvironmentVariable(\"waiting_time_in_ms\");\r",
+									"pm.test(\"Response time is less than \"+wms+\"ms\", () => {\r",
+									"  pm.expect(pm.response.responseTime).to.be.below(parseInt(wms));\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin1_access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_api_url}}/cleanup/users/{{register_email}}",
+							"host": [
+								"{{base_api_url}}"
+							],
+							"path": [
+								"cleanup",
+								"users",
+								"{{register_email}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Admin Logout",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Successful delete request\", () => {\r",
+									"    postman.setEnvironmentVariable('admin1_refresh_token', '');\r",
+									"    pm.expect(pm.response.code).to.be.oneOf([204, 401]);\r",
+									"});\r",
+									"\r",
+									"var wms = postman.getEnvironmentVariable(\"waiting_time_in_ms\");\r",
+									"pm.test(\"Response time is less than \"+wms+\"ms\", () => {\r",
+									"  pm.expect(pm.response.responseTime).to.be.below(parseInt(wms));\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin1_refresh_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_api_url}}/auth/logout",
+							"host": [
+								"{{base_api_url}}"
+							],
+							"path": [
+								"auth",
+								"logout"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Logout",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Successful delete request\", () => {\r",
+									"    postman.setEnvironmentVariable('register_refresh_token', '');\r",
+									"    pm.expect(pm.response.code).to.be.oneOf([204, 401]);\r",
+									"});\r",
+									"\r",
+									"var wms = postman.getEnvironmentVariable(\"waiting_time_in_ms\");\r",
+									"pm.test(\"Response time is less than \"+wms+\"ms\", () => {\r",
+									"  pm.expect(pm.response.responseTime).to.be.below(parseInt(wms));\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{register_refresh_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_api_url}}/auth/logout",
+							"host": [
+								"{{base_api_url}}"
+							],
+							"path": [
+								"auth",
+								"logout"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Users",
+			"item": [
+				{
+					"name": "All Users",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"    pm.expect(pm.response.code).to.eql(200);\r",
+									"    pm.response.to.be.ok;\r",
+									"    pm.response.to.be.withBody;\r",
+									"    pm.response.to.be.json;\r",
+									"});\r",
+									"\r",
+									"var wms = postman.getEnvironmentVariable(\"waiting_time_in_ms\");\r",
+									"pm.test(\"Response time is less than \"+wms+\"ms\", () => {\r",
+									"  pm.expect(pm.response.responseTime).to.be.below(parseInt(wms));\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{admin1_access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_api_url}}/users?pageNumber=0&pageSize=25",
+							"host": [
+								"{{base_api_url}}"
+							],
+							"path": [
+								"users"
+							],
+							"query": [
+								{
+									"key": "pageNumber",
+									"value": "0"
+								},
+								{
+									"key": "pageSize",
+									"value": "25"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Submissions",
+			"item": [
+				{
+					"name": "All Submissions",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"    pm.expect(pm.response.code).to.eql(200);\r",
+									"    pm.response.to.be.ok;\r",
+									"    pm.response.to.be.withBody;\r",
+									"    pm.response.to.be.json;\r",
+									"});\r",
+									"\r",
+									"var wms = postman.getEnvironmentVariable(\"waiting_time_in_ms\");\r",
+									"pm.test(\"Response time is less than \"+wms+\"ms\", () => {\r",
+									"  pm.expect(pm.response.responseTime).to.be.below(parseInt(wms));\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{register_access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_api_url}}/submissions?pageNumber=0&pageSize=25",
+							"host": [
+								"{{base_api_url}}"
+							],
+							"path": [
+								"submissions"
+							],
+							"query": [
+								{
+									"key": "pageNumber",
+									"value": "0"
+								},
+								{
+									"key": "pageSize",
+									"value": "25"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Submission",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"    pm.expect(pm.response.code).to.eql(200);\r",
+									"    pm.response.to.be.ok;\r",
+									"    pm.response.to.be.withBody;\r",
+									"    pm.response.to.be.json;\r",
+									"});\r",
+									"\r",
+									"pm.test(\"response body is a submission\", () => {\r",
+									"    pm.response.to.be.ok;\r",
+									"    pm.response.to.be.withBody;\r",
+									"    pm.response.to.be.json;\r",
+									"\r",
+									"    const responseJson = pm.response.json();\r",
+									"    pm.expect(responseJson.id).to.be.a('number');\r",
+									"    postman.setEnvironmentVariable('submission_id', responseJson.id);\r",
+									"    pm.expect(responseJson.content).to.be.a('string');\r",
+									"    pm.expect(responseJson.status).to.eql('AWAITING_APPROVAL');\r",
+									"    pm.expect(responseJson.submitter.email).to.eql(postman.getEnvironmentVariable(\"register_email\"));\r",
+									"});\r",
+									"\r",
+									"var wms = postman.getEnvironmentVariable(\"waiting_time_in_ms\");\r",
+									"pm.test(\"Response time is less than \"+wms+\"ms\", () => {\r",
+									"  pm.expect(pm.response.responseTime).to.be.below(parseInt(wms));\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{register_access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"content\": \"submit a document\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_api_url}}/submissions",
+							"host": [
+								"{{base_api_url}}"
+							],
+							"path": [
+								"submissions"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Submission",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"    pm.expect(pm.response.code).to.eql(200);\r",
+									"    pm.response.to.be.ok;\r",
+									"    pm.response.to.be.withBody;\r",
+									"    pm.response.to.be.json;\r",
+									"});\r",
+									"\r",
+									"var wms = postman.getEnvironmentVariable(\"waiting_time_in_ms\");\r",
+									"pm.test(\"Response time is less than \"+wms+\"ms\", () => {\r",
+									"  pm.expect(pm.response.responseTime).to.be.below(parseInt(wms));\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{register_access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_api_url}}/submissions/{{submission_id}}",
+							"host": [
+								"{{base_api_url}}"
+							],
+							"path": [
+								"submissions",
+								"{{submission_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Submission",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"response must be valid and have a body\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"    pm.expect(pm.response.code).to.eql(200);\r",
+									"    pm.response.to.be.ok;\r",
+									"    pm.response.to.be.withBody;\r",
+									"    pm.response.to.be.json;\r",
+									"});\r",
+									"\r",
+									"var wms = postman.getEnvironmentVariable(\"waiting_time_in_ms\");\r",
+									"pm.test(\"Response time is less than \"+wms+\"ms\", () => {\r",
+									"  pm.expect(pm.response.responseTime).to.be.below(parseInt(wms));\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{register_access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"content\": \"update content\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_api_url}}/submissions/{{submission_id}}",
+							"host": [
+								"{{base_api_url}}"
+							],
+							"path": [
+								"submissions",
+								"{{submission_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Not Owner Submission-403",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Access Denied\", function () {\r",
+									"    pm.response.to.have.status(403);\r",
+									"    pm.expect(pm.response.code).to.eql(403);\r",
+									"    pm.response.to.be.forbidden;\r",
+									"    pm.response.to.be.withBody;\r",
+									"    pm.response.to.be.json;\r",
+									"    const responseJson = pm.response.json();\r",
+									"    pm.expect(responseJson.status).to.eql('FORBIDDEN');\r",
+									"    pm.expect(responseJson.message).to.eql('Access Denied');\r",
+									"});\r",
+									"\r",
+									"var wms = postman.getEnvironmentVariable(\"waiting_time_in_ms\");\r",
+									"pm.test(\"Response time is less than \"+wms+\"ms\", () => {\r",
+									"  pm.expect(pm.response.responseTime).to.be.below(parseInt(wms));\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{register_access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"content\": \"update content\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_api_url}}/submissions/{{admin1_submission_id}}",
+							"host": [
+								"{{base_api_url}}"
+							],
+							"path": [
+								"submissions",
+								"{{admin1_submission_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Submission",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Successful delete request\", () => {\r",
+									"    pm.expect(pm.response.code).to.be.oneOf([204]);\r",
+									"});\r",
+									"\r",
+									"var wms = postman.getEnvironmentVariable(\"waiting_time_in_ms\");\r",
+									"pm.test(\"Response time is less than \"+wms+\"ms\", () => {\r",
+									"  pm.expect(pm.response.responseTime).to.be.below(parseInt(wms));\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{register_access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_api_url}}/submissions/{{submission_id}}",
+							"host": [
+								"{{base_api_url}}"
+							],
+							"path": [
+								"submissions",
+								"{{submission_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Not Owner Submission-403",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Access Denied\", function () {\r",
+									"    pm.response.to.have.status(403);\r",
+									"    pm.expect(pm.response.code).to.eql(403);\r",
+									"    pm.response.to.be.forbidden;\r",
+									"    pm.response.to.be.withBody;\r",
+									"    pm.response.to.be.json;\r",
+									"    const responseJson = pm.response.json();\r",
+									"    pm.expect(responseJson.status).to.eql('FORBIDDEN');\r",
+									"    pm.expect(responseJson.message).to.eql('Access Denied');\r",
+									"});\r",
+									"\r",
+									"var wms = postman.getEnvironmentVariable('waiting_time_in_ms');\r",
+									"pm.test(\"Response time is less than \"+wms+\"ms\", () => {\r",
+									"  pm.expect(pm.response.responseTime).to.be.below(parseInt(wms));\r",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{register_access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_api_url}}/submissions/{{admin1_submission_id}}",
+							"host": [
+								"{{base_api_url}}"
+							],
+							"path": [
+								"submissions",
+								"{{admin1_submission_id}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Register",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"response must be valid and have a body\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"    pm.expect(pm.response.code).to.eql(200);\r",
+							"    pm.response.to.be.ok;\r",
+							"    pm.response.to.be.withBody;\r",
+							"    pm.response.to.be.json;\r",
+							"});\r",
+							"\r",
+							"pm.test(\"response body is registerd submitter\", () => {\r",
+							"    pm.response.to.be.ok;\r",
+							"    pm.response.to.be.withBody;\r",
+							"    pm.response.to.be.json;\r",
+							"\r",
+							"    const responseJson = pm.response.json();\r",
+							"    pm.expect(responseJson.role).to.eql('SUBMITTER');\r",
+							"    pm.expect(responseJson.email).to.be.a('string');\r",
+							"    pm.expect(responseJson.email).to.eql(postman.getEnvironmentVariable(\"register_email\"));\r",
+							"    pm.expect(responseJson.id).to.be.a(\"number\");\r",
+							"    pm.expect(responseJson.id).to.gt(1);\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Content-Type header is present\", () => {\r",
+							"  pm.response.to.have.header(\"Content-Type\");\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Content-Type header is application/json\", () => {\r",
+							"  pm.expect(pm.response.headers.get('Content-Type')).to.eql('application/json');\r",
+							"});\r",
+							"\r",
+							"var wms = postman.getEnvironmentVariable(\"waiting_time_in_ms\");\r",
+							"pm.test(\"Response time is less than \"+wms+\"ms\", () => {\r",
+							"  pm.expect(pm.response.responseTime).to.be.below(parseInt(wms));\r",
+							"});\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"email\": \"{{register_email}}\",\r\n    \"password\": \"{{register_password}}\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_api_url}}/auth/register",
+					"host": [
+						"{{base_api_url}}"
+					],
+					"path": [
+						"auth",
+						"register"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Login",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"response must be valid and have a body\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"    pm.expect(pm.response.code).to.eql(200);\r",
+							"    pm.response.to.be.ok;\r",
+							"    pm.response.to.be.withBody;\r",
+							"    pm.response.to.be.json;\r",
+							"});\r",
+							"\r",
+							"pm.test(\"response body is refresh and access tokens\", () => {\r",
+							"    pm.response.to.be.ok;\r",
+							"    pm.response.to.be.withBody;\r",
+							"    pm.response.to.be.json;\r",
+							"\r",
+							"    const responseJson = pm.response.json();\r",
+							"    pm.expect(responseJson.refreshToken).to.be.a('string');\r",
+							"    postman.setEnvironmentVariable('register_refresh_token', responseJson.refreshToken);\r",
+							"    pm.expect(responseJson.accessToken).to.be.a('string');\r",
+							"    postman.setEnvironmentVariable('register_access_token', responseJson.accessToken);\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Content-Type header is application/json\", () => {\r",
+							"  pm.expect(pm.response.headers.get('Content-Type')).to.eql('application/json');\r",
+							"});\r",
+							"\r",
+							"var wms = postman.getEnvironmentVariable(\"waiting_time_in_ms\");\r",
+							"pm.test(\"Response time is less than \"+wms+\"ms\", () => {\r",
+							"  pm.expect(pm.response.responseTime).to.be.below(parseInt(wms));\r",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"email\": \"{{register_email}}\",\r\n    \"password\": \"{{register_password}}\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_api_url}}/auth/login",
+					"host": [
+						"{{base_api_url}}"
+					],
+					"path": [
+						"auth",
+						"login"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Access Token",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"response must be valid and have a body\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"    pm.expect(pm.response.code).to.eql(200);\r",
+							"    pm.response.to.be.ok;\r",
+							"    pm.response.to.be.withBody;\r",
+							"    pm.response.to.be.json;\r",
+							"});\r",
+							"\r",
+							"pm.test(\"response body is refresh and access tokens\", () => {\r",
+							"    pm.response.to.be.ok;\r",
+							"    pm.response.to.be.withBody;\r",
+							"    pm.response.to.be.json;\r",
+							"\r",
+							"    const responseJson = pm.response.json();\r",
+							"    pm.expect(responseJson.accessToken).to.be.a('string');\r",
+							"    postman.setEnvironmentVariable('register_access_token', responseJson.accessToken);\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Response time is less than 200ms\", () => {\r",
+							"  pm.expect(pm.response.responseTime).to.be.below(200);\r",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{register_refresh_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_api_url}}/auth/refresh",
+					"host": [
+						"{{base_api_url}}"
+					],
+					"path": [
+						"auth",
+						"refresh"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Register-invalidEmail-400",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"response must be bad request and have a problem detail body\", function () {\r",
+							"    pm.response.to.have.status(400);\r",
+							"    pm.expect(pm.response.code).to.eql(400);\r",
+							"    pm.response.to.be.badRequest;\r",
+							"    pm.response.to.be.withBody;\r",
+							"    pm.response.to.be.json;\r",
+							"});\r",
+							"\r",
+							"pm.test(\"response body is Bad Request\", () => {\r",
+							"    pm.response.to.be.badRequest;\r",
+							"    pm.response.to.be.withBody;\r",
+							"    pm.response.to.be.json;\r",
+							"\r",
+							"    const responseJson = pm.response.json();\r",
+							"    pm.expect(responseJson.title).to.eql('Bad Request');\r",
+							"    pm.expect(responseJson.status).to.eql(400);\r",
+							"    pm.expect(responseJson.detail).to.eql('Invalid request content.');\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Content-Type header is present\", () => {\r",
+							"  pm.response.to.have.header(\"Content-Type\");\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Content-Type header is application/problem+json\", () => {\r",
+							"  pm.expect(pm.response.headers.get('Content-Type')).to.eql('application/problem+json');\r",
+							"});\r",
+							"\r",
+							"var wms = postman.getEnvironmentVariable(\"waiting_time_in_ms\");\r",
+							"pm.test(\"Response time is less than \"+wms+\"ms\", () => {\r",
+							"  pm.expect(pm.response.responseTime).to.be.below(parseInt(wms));\r",
+							"});\r",
+							"\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"email\": \"invalidEmail\",\r\n    \"password\": \"*****\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_api_url}}/auth/register",
+					"host": [
+						"{{base_api_url}}"
+					],
+					"path": [
+						"auth",
+						"register"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Register-existedEmail-409",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"response must be conflict and have an error message body\", function () {\r",
+							"    pm.response.to.have.status(409);\r",
+							"    pm.expect(pm.response.code).to.eql(409);\r",
+							"    pm.response.to.be.clientError;\r",
+							"    pm.response.to.be.withBody;\r",
+							"    pm.response.to.be.json;\r",
+							"});\r",
+							"\r",
+							"pm.test(\"response body is registerd submitter\", () => {\r",
+							"    pm.response.to.be.clientError;\r",
+							"    pm.response.to.be.withBody;\r",
+							"    pm.response.to.be.json;\r",
+							"\r",
+							"    const responseJson = pm.response.json();\r",
+							"    pm.expect(responseJson.status).to.be.a('string');\r",
+							"    pm.expect(responseJson.status).to.eql('CONFLICT');\r",
+							"    pm.expect(responseJson.message).to.be.a('string');\r",
+							"    pm.expect(responseJson.message).to.eql('admin1@dqtri.com is already in use');\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Content-Type header is present\", () => {\r",
+							"  pm.response.to.have.header(\"Content-Type\");\r",
+							"});\r",
+							"\r",
+							"pm.test(\"Content-Type header is application/json\", () => {\r",
+							"  pm.expect(pm.response.headers.get('Content-Type')).to.eql('application/json');\r",
+							"});\r",
+							"\r",
+							"var wms = postman.getEnvironmentVariable(\"waiting_time_in_ms\");\r",
+							"pm.test(\"Response time is less than \"+wms+\"ms\", () => {\r",
+							"  pm.expect(pm.response.responseTime).to.be.below(parseInt(wms));\r",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"email\": \"admin1@dqtri.com\",\r\n    \"password\": \"******\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_api_url}}/auth/register",
+					"host": [
+						"{{base_api_url}}"
+					],
+					"path": [
+						"auth",
+						"register"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

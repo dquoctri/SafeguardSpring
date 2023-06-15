@@ -15,6 +15,7 @@ import com.dqtri.mango.safeguard.model.dto.payload.RegisterPayload;
 import com.dqtri.mango.safeguard.model.dto.response.AuthenticationResponse;
 import com.dqtri.mango.safeguard.model.dto.response.ErrorResponse;
 import com.dqtri.mango.safeguard.model.dto.response.RefreshResponse;
+import com.dqtri.mango.safeguard.model.dto.response.UserResponse;
 import com.dqtri.mango.safeguard.model.enums.Role;
 import com.dqtri.mango.safeguard.repository.BlackListRefreshTokenRepository;
 import com.dqtri.mango.safeguard.repository.LoginAttemptRepository;
@@ -79,19 +80,19 @@ public class AuthController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Registered user details",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = SafeguardUser.class))}),
+                            schema = @Schema(implementation = UserResponse.class))}),
             @ApiResponse(responseCode = "400", description = "The provided email or password format is invalid",
                     content = {@Content(mediaType = "application/json",
                             schema = @Schema(implementation = ProblemDetail.class))}),
     })
-    @PostMapping(value = "/register")
     @Transactional
-    public ResponseEntity<SafeguardUser> register(@RequestBody @Valid RegisterPayload register) {
+    @PostMapping(value = "/register", consumes = {MediaType.APPLICATION_JSON_VALUE}, produces = {MediaType.APPLICATION_JSON_VALUE})
+    public ResponseEntity<UserResponse> register(@RequestBody @Valid RegisterPayload register) {
         checkConflictUserEmail(register.getEmail());
         SafeguardUser safeguardUser = createSafeguardUser(register);
         SafeguardUser saved = userRepository.save(safeguardUser);
         cleanLoginAttempt(register.getEmail());
-        return ResponseEntity.ok(saved);
+        return ResponseEntity.ok(new UserResponse(saved));
     }
 
     private void cleanLoginAttempt(String email){
@@ -128,9 +129,7 @@ public class AuthController {
                     content = {@Content(mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponse.class))}),
     })
-    @PostMapping(value = "/login",
-            consumes = {MediaType.APPLICATION_JSON_VALUE},
-            produces = {MediaType.APPLICATION_JSON_VALUE})
+    @PostMapping(value = "/login", consumes = {MediaType.APPLICATION_JSON_VALUE}, produces = {MediaType.APPLICATION_JSON_VALUE})
     public ResponseEntity<AuthenticationResponse> login(@RequestBody @Valid LoginPayload login) {
         LoginAttempt loginAttempt = tryLoginAttempt(login.getEmail());
         var authenticationToken = new UsernamePasswordAuthenticationToken(login.getEmail(), login.getPassword());

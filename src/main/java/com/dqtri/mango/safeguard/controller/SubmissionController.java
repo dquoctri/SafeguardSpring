@@ -128,7 +128,7 @@ public class SubmissionController {
     @Transactional
     @PutMapping("/submissions/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'SUBMITTER') and hasPermission(#id, @submissionOwner)")
-    public ResponseEntity<Submission> updateSubmission(@PathVariable("id") Long id,
+    public ResponseEntity<SubmissionResponse> updateSubmission(@PathVariable("id") Long id,
                                                        @RequestBody @Valid SubmissionPayload submissionPayload) {
         Submission submission = getSubmissionOrElseThrow(id);
         if (submission.getAssignedUser() != null) {
@@ -136,7 +136,7 @@ public class SubmissionController {
         }
         submission.setContent(submissionPayload.getContent());
         Submission saved = submissionRepository.save(submission);
-        return ResponseEntity.ok(saved);
+        return ResponseEntity.ok(new SubmissionResponse(saved));
     }
 
     @Operation(summary = "Update submission", description = "Update an existing submission with the provided details")
@@ -154,7 +154,7 @@ public class SubmissionController {
     @Transactional
     @PutMapping("/submissions/{id}/assign")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
-    public ResponseEntity<Submission> assignSubmission(@PathVariable("id") Long id,
+    public ResponseEntity<SubmissionResponse> assignSubmission(@PathVariable("id") Long id,
                                                        @RequestBody @Valid AssignPayload assignPayload) {
         Submission submission = getSubmissionOrElseThrow(id);
         if (submission.getAssignedUser() != null) {
@@ -163,7 +163,7 @@ public class SubmissionController {
         SafeguardUser user = getUserOrElseThrow(assignPayload.getEmail());
         submission.setAssignedUser(user);
         Submission saved = submissionRepository.save(submission);
-        return ResponseEntity.ok(saved);
+        return ResponseEntity.ok(new SubmissionResponse(saved));
     }
 
     //todo approval rest
@@ -176,8 +176,8 @@ public class SubmissionController {
     })
     @Transactional
     @DeleteMapping("/submissions/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUBMITTER') and hasPermission(#id, submissionOwner)")
-    public ResponseEntity<Submission> deleteSubmission(@PathVariable("id") Long id) {
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUBMITTER') and hasPermission(#id, @submissionOwner)")
+    public ResponseEntity<Void> deleteSubmission(@PathVariable("id") Long id) {
         Submission submission = getSubmissionOrElseThrow(id);
         submissionRepository.delete(submission);
         return ResponseEntity.noContent().build();
