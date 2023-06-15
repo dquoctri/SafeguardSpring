@@ -15,7 +15,7 @@ import java.io.Serializable;
 
 @Slf4j
 @RequiredArgsConstructor
-@Component("submissionOwnerPermission")
+@Component("submissionOwner")
 public class SubmissionOwnerPermission extends Permission {
 
     private final SubmissionRepository submissionRepository;

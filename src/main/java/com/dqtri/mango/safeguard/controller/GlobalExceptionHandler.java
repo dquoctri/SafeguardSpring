@@ -6,6 +6,7 @@
 package com.dqtri.mango.safeguard.controller;
 
 import com.dqtri.mango.safeguard.exception.ConflictException;
+import com.dqtri.mango.safeguard.exception.LockedException;
 import com.dqtri.mango.safeguard.exception.LoginFailedException;
 import com.dqtri.mango.safeguard.model.dto.response.ErrorResponse;
 import jakarta.persistence.EntityNotFoundException;
@@ -45,8 +46,14 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(ConflictException.class)
     @ResponseStatus(HttpStatus.CONFLICT)
-    public ResponseEntity<ErrorResponse> handleAccessDeniedException(ConflictException e) {
+    public ResponseEntity<ErrorResponse> handleConflictException(ConflictException e) {
         return handleException(e, HttpStatus.CONFLICT);
+    }
+
+    @ExceptionHandler(LockedException.class)
+    @ResponseStatus(HttpStatus.LOCKED)
+    public ResponseEntity<ErrorResponse> handleLockedException(LockedException e) {
+        return handleException(e, HttpStatus.LOCKED);
     }
 
     @ExceptionHandler(IllegalArgumentException.class)

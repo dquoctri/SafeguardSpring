@@ -8,11 +8,19 @@ package com.dqtri.mango.safeguard.controller;
 import com.dqtri.mango.safeguard.annotation.AuthenticationApiResponses;
 import com.dqtri.mango.safeguard.annotation.NotFound404ApiResponses;
 import com.dqtri.mango.safeguard.annotation.Validation400ApiResponses;
+import com.dqtri.mango.safeguard.exception.LockedException;
+import com.dqtri.mango.safeguard.model.SafeguardUser;
 import com.dqtri.mango.safeguard.model.Submission;
 import com.dqtri.mango.safeguard.model.dto.PageCriteria;
+import com.dqtri.mango.safeguard.model.dto.payload.AssignPayload;
 import com.dqtri.mango.safeguard.model.dto.payload.SubmissionPayload;
+import com.dqtri.mango.safeguard.model.dto.response.ErrorResponse;
 import com.dqtri.mango.safeguard.model.dto.response.SubmissionResponse;
+import com.dqtri.mango.safeguard.model.enums.Status;
 import com.dqtri.mango.safeguard.repository.SubmissionRepository;
+import com.dqtri.mango.safeguard.repository.UserRepository;
+import com.dqtri.mango.safeguard.security.AppUserDetails;
+import com.dqtri.mango.safeguard.security.UserPrincipal;
 import com.dqtri.mango.safeguard.util.Helper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -24,8 +32,11 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,6 +57,7 @@ import java.util.List;
 public class SubmissionController {
 
     private final SubmissionRepository submissionRepository;
+    private final UserRepository userRepository;
 
     @Operation(summary = "Get submissions", description = "Retrieve a paginated list of submissions")
     @AuthenticationApiResponses
@@ -93,8 +105,10 @@ public class SubmissionController {
     @Transactional
     @PostMapping("/submissions")
     @PreAuthorize("hasAnyRole('ADMIN', 'SUBMITTER')")
-    public ResponseEntity<SubmissionResponse> createSubmission(@RequestBody @Valid SubmissionPayload submissionPayload) {
+    public ResponseEntity<SubmissionResponse> createSubmission(@UserPrincipal AppUserDetails currentUser,
+                                                               @RequestBody @Valid SubmissionPayload submissionPayload) {
         Submission submission = submissionPayload.toSubmission();
+        submission.setSubmitter(currentUser.getSafeguardUser());
         Submission saved = submissionRepository.save(submission);
         return ResponseEntity.ok(new SubmissionResponse(saved));
     }
@@ -106,19 +120,53 @@ public class SubmissionController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successful update of submission",
                     content = {@Content(mediaType = "application/json",
-                            schema = @Schema(implementation = Submission.class))})
+                            schema = @Schema(implementation = Submission.class))}),
+            @ApiResponse(responseCode = "423", description = "The submission is assigned",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class))})
     })
     @Transactional
     @PutMapping("/submissions/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUBMITTER') and @resourceOwnerEvaluator.hasPermission(#id, @submissionOwnerPermission)")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUBMITTER') and hasPermission(#id, @submissionOwner)")
     public ResponseEntity<Submission> updateSubmission(@PathVariable("id") Long id,
                                                        @RequestBody @Valid SubmissionPayload submissionPayload) {
         Submission submission = getSubmissionOrElseThrow(id);
+        if (submission.getAssignedUser() != null) {
+            throw new LockedException("The submission is assigned");
+        }
         submission.setContent(submissionPayload.getContent());
-        //toDO
         Submission saved = submissionRepository.save(submission);
         return ResponseEntity.ok(saved);
     }
+
+    @Operation(summary = "Update submission", description = "Update an existing submission with the provided details")
+    @AuthenticationApiResponses
+    @Validation400ApiResponses
+    @NotFound404ApiResponses
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Successful update of submission",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = Submission.class))}),
+            @ApiResponse(responseCode = "423", description = "The submission is assigned",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class))})
+    })
+    @Transactional
+    @PutMapping("/submissions/{id}/assign")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ResponseEntity<Submission> assignSubmission(@PathVariable("id") Long id,
+                                                       @RequestBody @Valid AssignPayload assignPayload) {
+        Submission submission = getSubmissionOrElseThrow(id);
+        if (submission.getAssignedUser() != null) {
+            throw new LockedException("The submission is assigned");
+        }
+        SafeguardUser user = getUserOrElseThrow(assignPayload.getEmail());
+        submission.setAssignedUser(user);
+        Submission saved = submissionRepository.save(submission);
+        return ResponseEntity.ok(saved);
+    }
+
+    //todo approval rest
 
     @Operation(summary = "Delete submission", description = "Delete an existing submission")
     @AuthenticationApiResponses
@@ -128,7 +176,7 @@ public class SubmissionController {
     })
     @Transactional
     @DeleteMapping("/submissions/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUBMITTER') and hasPermission(#id, submissionOwnerPermission)")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUBMITTER') and hasPermission(#id, submissionOwner)")
     public ResponseEntity<Submission> deleteSubmission(@PathVariable("id") Long id) {
         Submission submission = getSubmissionOrElseThrow(id);
         submissionRepository.delete(submission);
@@ -138,6 +186,12 @@ public class SubmissionController {
     private Submission getSubmissionOrElseThrow(Long id) {
         return submissionRepository.findById(id).orElseThrow(
                 () -> new EntityNotFoundException(String.format("Submission is not found with id: %s", id))
+        );
+    }
+
+    private SafeguardUser getUserOrElseThrow(String email) {
+        return userRepository.findByEmail(email).orElseThrow(
+                () -> new EntityNotFoundException(String.format("User is not found with email: %s", email))
         );
     }
 }
