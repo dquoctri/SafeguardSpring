@@ -2,12 +2,14 @@ package com.dqtri.mango.safeguard.controller;
 
 import com.dqtri.mango.safeguard.common.WithMockAppUser;
 import com.dqtri.mango.safeguard.config.SecurityConfig;
+import com.dqtri.mango.safeguard.model.LoginAttempt;
 import com.dqtri.mango.safeguard.model.SafeguardUser;
 import com.dqtri.mango.safeguard.model.dto.payload.ResetPasswordPayload;
 import com.dqtri.mango.safeguard.model.dto.payload.UserCreatingPayload;
 import com.dqtri.mango.safeguard.model.dto.payload.UserUpdatingPayload;
 import com.dqtri.mango.safeguard.model.dto.response.ErrorResponse;
 import com.dqtri.mango.safeguard.model.enums.Role;
+import com.dqtri.mango.safeguard.repository.LoginAttemptRepository;
 import com.dqtri.mango.safeguard.repository.UserRepository;
 import com.dqtri.mango.safeguard.security.AppUserDetails;
 import com.dqtri.mango.safeguard.security.permissions.UpdatableResourcePermission;
@@ -46,6 +48,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
@@ -65,6 +68,8 @@ public class UserControllerAuthorizationTest extends AbstractIntegrationTest {
     private PasswordEncoder passwordEncoder;
     @MockBean
     private UserRepository userRepository;
+    @MockBean
+    private LoginAttemptRepository loginAttemptRepository;
 
     @Nested
     class RouteGetAllUsersAuthorizationIntegrationTest {
@@ -311,6 +316,7 @@ public class UserControllerAuthorizationTest extends AbstractIntegrationTest {
         @Test
         @WithMockUser(roles = "ADMIN")
         void createUser_defaultAdmin_returnCreated() throws Exception {
+            when(loginAttemptRepository.findByEmail(any())).thenReturn(Optional.of(new LoginAttempt()));
             SafeguardUser submitterUser = createSubmitterUser();
             when(userRepository.save(any())).thenReturn(submitterUser);
             UserCreatingPayload userCreatingPayload = createUserCreatingPayload();
@@ -320,6 +326,7 @@ public class UserControllerAuthorizationTest extends AbstractIntegrationTest {
             verify(userRepository).save(userArgumentCaptor.capture());
             SafeguardUser value = userArgumentCaptor.getValue();
             assertThat(value.getRole()).isEqualTo(Role.SUBMITTER);
+            verify(loginAttemptRepository, times(1)).delete(any());
         }
 
         @Test

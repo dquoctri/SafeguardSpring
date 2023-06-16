@@ -5,26 +5,32 @@
 
 package com.dqtri.mango.safeguard.security.impl;
 
+import com.dqtri.mango.safeguard.model.SafeguardUser;
 import com.dqtri.mango.safeguard.model.enums.Role;
 import com.dqtri.mango.safeguard.repository.UserRepository;
 import com.dqtri.mango.safeguard.security.AppUserDetails;
+import com.dqtri.mango.safeguard.security.BasicUserDetails;
 import com.dqtri.mango.safeguard.security.UserDetailsServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
 import org.mockito.Mock;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
+import java.util.Optional;
+
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.when;
 
 @SpringBootTest(classes = {UserDetailsServiceImpl.class})
 public class UserDetailsServiceImplTest {
 
-    @Mock
+    @MockBean
     UserRepository userRepository;
 
     private UserDetailsService userDetailsService;
@@ -36,12 +42,22 @@ public class UserDetailsServiceImplTest {
 
     @Test
     public void loadUserByUsername_givenExistUsername_returnsConfigUser() {
-        UserDetails userDetails = userDetailsService.loadUserByUsername("submitter@mango.dqtri.com");
+        SafeguardUser safeguardUser = createSubmitterUser();
+        when(userRepository.findByEmail("submitter@dqtri.com")).thenReturn(Optional.of(safeguardUser));
+        UserDetails userDetails = userDetailsService.loadUserByUsername("submitter@dqtri.com");
         assertThat(userDetails).isNotNull();
-        assertThat(userDetails).isInstanceOf(AppUserDetails.class);
-        AppUserDetails appUserDetails = (AppUserDetails)userDetails;
-        assertThat(appUserDetails.getSafeguardUser()).isNotNull();
-        assertThat(appUserDetails.getSafeguardUser().getRole()).isEqualTo(Role.SUBMITTER);
+        assertThat(userDetails).isInstanceOf(BasicUserDetails.class);
+        BasicUserDetails basicUserDetails = (BasicUserDetails)userDetails;
+        assertThat(basicUserDetails.getSafeguardUser()).isNotNull();
+        assertThat(basicUserDetails.getSafeguardUser().getRole()).isEqualTo(Role.SUBMITTER);
+    }
+
+    private SafeguardUser createSubmitterUser() {
+        SafeguardUser safeguardUser = new SafeguardUser();
+        safeguardUser.setEmail("submitter@dqtri.com");
+        safeguardUser.setPassword("submitter");
+        safeguardUser.setRole(Role.SUBMITTER);
+        return safeguardUser;
     }
 
     @Test
@@ -58,6 +74,8 @@ public class UserDetailsServiceImplTest {
 
     @Test
     public void loadUserByUsername_givenNullUsername_thenThrowNotFound() {
+        when(userRepository.findByEmail("submitter@dqtri.com"))
+                .thenThrow(new UsernameNotFoundException(String.format("Username not found: %s", "null")));
         Executable executable = () -> userDetailsService.loadUserByUsername(null);
         //test
         assertThrows(

@@ -56,7 +56,6 @@ public class UserController {
 
     private final PasswordEncoder passwordEncoder;
     private final UserRepository userRepository;
-
     private final LoginAttemptRepository loginAttemptRepository;
 
     @Operation(summary = "Get users", description = "Retrieve a paginated list of users")

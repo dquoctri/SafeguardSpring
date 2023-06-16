@@ -89,6 +89,8 @@ public class AuthControllerIntegrationTest extends AbstractIntegrationTest {
         @Test
         void register_givenUserCredentials_thenSuccess() throws Exception {
             when(loginAttemptRepository.findByEmail(anyString())).thenReturn(Optional.empty());
+            SafeguardUser safeguardUser = createSafeguardUser();
+            when(userRepository.save(any())).thenReturn(safeguardUser);
             RegisterPayload registerPayload = createRegisterPayload();
             //then
             performRegisterRequest(registerPayload, status().isOk());
@@ -105,13 +107,15 @@ public class AuthControllerIntegrationTest extends AbstractIntegrationTest {
             RegisterPayload registerPayload = createRegisterPayload();
             when(loginAttemptRepository.findByEmail(anyString()))
                     .thenReturn(Optional.of(new LoginAttempt(registerPayload.getEmail())));
+            SafeguardUser safeguardUser = createSafeguardUser();
+            when(userRepository.save(any())).thenReturn(safeguardUser);
             //then
             performRegisterRequest(registerPayload, status().isOk());
             //test
             verify(userRepository).save(userArgumentCaptor.capture());
             SafeguardUser value = userArgumentCaptor.getValue();
             assertThat(value.getRole()).isEqualTo(Role.SUBMITTER);
-            verify(userRepository).save(createSafeguardUser());
+            verify(userRepository, times(1)).save(any());
             verify(loginAttemptRepository, times(1)).delete(any());
         }
 

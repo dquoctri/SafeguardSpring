@@ -1,8 +1,9 @@
 package com.dqtri.mango.safeguard.security.access;
 
+import com.dqtri.mango.safeguard.model.SafeguardUser;
+import com.dqtri.mango.safeguard.model.enums.Role;
 import com.dqtri.mango.safeguard.security.AppUserDetails;
 import com.dqtri.mango.safeguard.security.TokenResolver;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -10,30 +11,29 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.when;
 
 @SpringBootTest(classes = {AccessAuthenticationFilterTest.class})
-public class AccessAuthenticationProviderTest {
+class AccessAuthenticationProviderTest {
 
     @Mock
     TokenResolver tokenResolver;
 
     @InjectMocks
-    AuthenticationProvider authenticationProvider;
-
-    @BeforeEach
-    public void setup(){
-        authenticationProvider = new AccessAuthenticationProvider(tokenResolver);
-    }
+    AccessAuthenticationProvider authenticationProvider;
 
     @Test
-    public void authenticate_givenToken_thenSuccess() {
-        AccessAuthenticationToken customAuthenticationToken = new AccessAuthenticationToken("Bearer header.payload.signature");
+    void authenticate_givenToken_thenSuccess() {
+        SafeguardUser safeguardUser = createSubmitterUser();
+        AppUserDetails appUserDetails = new AppUserDetails(safeguardUser);
+        when(tokenResolver.verifyToken("header.payload.signature"))
+                .thenReturn(new AccessAuthenticationToken(appUserDetails, appUserDetails.getAuthorities()));
+        var customAuthenticationToken = new AccessAuthenticationToken("Bearer header.payload.signature");
         Authentication authenticate = authenticationProvider.authenticate(customAuthenticationToken);
 
         //test
@@ -43,12 +43,20 @@ public class AccessAuthenticationProviderTest {
         assertThat(authenticate.getPrincipal()).isNotNull();
         assertThat(authenticate.getPrincipal()).isInstanceOf(AppUserDetails.class);
         AppUserDetails principal = (AppUserDetails) authenticate.getPrincipal();
-        assertThat(principal.getUsername()).isEqualTo("submitter@mango.dqtri.com");
+        assertThat(principal.getUsername()).isEqualTo("submitter@dqtri.com");
+    }
+
+    private SafeguardUser createSubmitterUser() {
+        SafeguardUser safeguardUser = new SafeguardUser();
+        safeguardUser.setEmail("submitter@dqtri.com");
+        safeguardUser.setPassword("submitter");
+        safeguardUser.setRole(Role.SUBMITTER);
+        return safeguardUser;
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"Bearer abc", "Bearer test-failed"})
-    public void authenticate_givenInvalidToken_thenNull(String accessToken) {
+    void authenticate_givenInvalidToken_thenNull(String accessToken) {
         AccessAuthenticationToken accessAuthenticationToken = new AccessAuthenticationToken(accessToken);
         Authentication authenticate = authenticationProvider.authenticate(accessAuthenticationToken);
         //test
@@ -56,7 +64,7 @@ public class AccessAuthenticationProviderTest {
     }
 
     @Test
-    public void authenticate_givenNullAuthentication_thenException() {
+    void authenticate_givenNullAuthentication_thenException() {
         Executable executable = () -> authenticationProvider.authenticate(null);
         //test
         IllegalArgumentException exception = assertThrows(
@@ -68,7 +76,7 @@ public class AccessAuthenticationProviderTest {
     }
 
     @Test
-    public void authenticate_givenNullToken_thenException() {
+    void authenticate_givenNullToken_thenException() {
         AccessAuthenticationToken accessAuthenticationToken = new AccessAuthenticationToken((String)null);
         Executable executable = () -> authenticationProvider.authenticate(accessAuthenticationToken);
         //test
@@ -81,26 +89,26 @@ public class AccessAuthenticationProviderTest {
     }
 
     @Test
-    public void authenticate_givenUsernamePasswordToken_thenNull() {
+    void authenticate_givenUsernamePasswordToken_thenNull() {
         var token = new UsernamePasswordAuthenticationToken("submitter", "submitter");
         Executable executable = () -> authenticationProvider.authenticate(token);
         //test
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
                 executable,
-                "Only Accepts Custom Token"
+                "Only accepts access token"
         );
-        assertThat(exception.getMessage()).startsWith("Only Accepts Custom Token");
+        assertThat(exception.getMessage()).startsWith("Only accepts access token");
     }
 
     @Test
-    public void support_givenCustomToken_thenTrue() {
+    void support_givenCustomToken_thenTrue() {
         boolean supports = authenticationProvider.supports(AccessAuthenticationToken.class);
         assertThat(supports).isTrue();
     }
 
     @Test
-    public void support_givenUsernamePasswordToken_thenFalse() {
+    void support_givenUsernamePasswordToken_thenFalse() {
         boolean supports = authenticationProvider.supports(UsernamePasswordAuthenticationToken.class);
         assertThat(supports).isFalse();
     }
