@@ -35,3 +35,12 @@ out/
 
 ### VS Code ###
 .vscode/
+
+# PyCharm
+.idea/
+*.iml
+*.ipr
+*.iws
+*.pyc
+*.pyo
+*~

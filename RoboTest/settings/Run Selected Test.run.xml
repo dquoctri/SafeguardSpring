@@ -1,0 +1,21 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Run Selected Test" type="RobotFramework" factoryName="RobotFramework">
+    <option name="target" value="$FilePath$" />
+    <option name="args">
+      <list>
+        <option value="-t" />
+        <option value="*$SelectedText$*" />
+        <option value="-d" />
+        <option value="$ProjectFileDir$/tests/reports/$FileDirName$/$FileNameWithoutExtension$/$SelectedText$" />
+      </list>
+    </option>
+    <option name="env">
+      <map>
+        <entry key="env" value="Development" />
+      </map>
+    </option>
+    <option name="workingDir" value="$ProjectFileDir$" />
+    <option name="makeSuite" value="true" />
+    <method v="2" />
+  </configuration>
+</component>

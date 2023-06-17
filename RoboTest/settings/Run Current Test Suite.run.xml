@@ -1,0 +1,20 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Run Current Test Suite" type="RobotFramework" factoryName="RobotFramework">
+    <option name="target" value="$FilePath$" />
+    <option name="args">
+      <list>
+        <option value="-d" />
+        <option value="$ProjectFileDir$/tests/reports/$ModuleName$/$FileNameWithoutExtension$/" />
+        <option value="--timestampoutputs" />
+      </list>
+    </option>
+    <option name="env">
+      <map>
+        <entry key="default_level" value="INFO" />
+      </map>
+    </option>
+    <option name="workingDir" value="$ProjectFileDir$" />
+    <option name="makeSuite" value="true" />
+    <method v="2" />
+  </configuration>
+</component>

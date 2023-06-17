@@ -1,0 +1,39 @@
+# Robot Framework
+__pycache__/
+output/
+logs/
+reports/
+screenshots/
+*.pyc
+*.pyo
+
+# Test artifacts
+*.log
+*.html
+*.xml
+*.png
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Other
+.DS_Store
+
+# Run options config
+!Run Current Test Suite.run.xml
+!Run Selected Test.run.xml
+/src/tests/
+/tests/
+/log/
+
+# PyCharm
+.idea/
+*.iml
+*.ipr
+*.iws
+*.pyc
+*.pyo
+*~
+
