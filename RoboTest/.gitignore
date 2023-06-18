@@ -24,8 +24,8 @@ env/
 # Run options config
 !Run Current Test Suite.run.xml
 !Run Selected Test.run.xml
-/src/tests/
-/tests/
+/src/results/
+/results/
 /log/
 
 # PyCharm

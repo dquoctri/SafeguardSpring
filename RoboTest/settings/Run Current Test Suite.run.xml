@@ -4,12 +4,13 @@
     <option name="args">
       <list>
         <option value="-d" />
-        <option value="$ProjectFileDir$/tests/reports/$ModuleName$/$FileNameWithoutExtension$/" />
+        <option value="$ProjectFileDir$/results/reports/$ModuleName$/$FileDirName$/$FileNameWithoutExtension$/" />
         <option value="--timestampoutputs" />
       </list>
     </option>
     <option name="env">
       <map>
+        <entry key="BASE_API_URL" value="http://localhost:8152/safeguard/api" />
         <entry key="default_level" value="INFO" />
       </map>
     </option>

@@ -1,9 +1,13 @@
-*** Setting ***
-Documentation   VS Code Tips
+*** Settings ***
+Documentation       Restful Booker example
+Metadata        Version            2.0
+Metadata        Robot Framework    http://robotframework.org
+Metadata        Restful Booker    https://docs.robotframework.org/docs/examples/restfulbooker
+Metadata        GitHub     https://github.com/mwinteringham/restful-booker
+Metadata        Platform           ${PLATFORM}
 Library    RequestsLibrary
 Library    Collections
 Suite Setup    Authenticate as Admin
-
 
 *** Test Cases ***
 Get Bookings from Restful Booker
@@ -11,14 +15,15 @@ Get Bookings from Restful Booker
     ${response}    GET    https://restful-booker.herokuapp.com/booking    ${body}
     Status Should Be    200
     Log List    ${response.json()}
-    FOR  ${booking}  IN  @{response.json()}
-        ${response}    GET    https://restful-booker.herokuapp.com/booking/${booking}[bookingid]
-        TRY
-            Log    ${response.json()}
-        EXCEPT
-            Log    Cannot retrieve JSON due to invalid data
-        END
-    END
+#    Disable this block code for running all suites fester
+#    FOR  ${booking}  IN  @{response.json()}
+#        ${response}    GET    https://restful-booker.herokuapp.com/booking/${booking}[bookingid]
+#        TRY
+#            Log    ${response.json()}
+#        EXCEPT
+#            Log    Cannot retrieve JSON due to invalid data
+#        END
+#    END
 
 Create a Booking at Restful Booker
     ${booking_dates}    Create Dictionary    checkin=2022-12-31    checkout=2023-01-01
@@ -37,16 +42,6 @@ Delete Booking
     ${header}    Create Dictionary    Cookie=token\=${token}
     ${response}    DELETE    url=https://restful-booker.herokuapp.com/booking/${id}    headers=${header}
     Status Should Be    201    ${response}
-
-Quick Get Request Test
-    ${response}=    GET  https://www.google.com
-
-Quick Get Request With Parameters Test
-    ${response}=    GET  https://www.google.com/search  params=query=ciao  expected_status=200
-
-Quick Get A JSON Body Test
-    ${response}=    GET  https://jsonplaceholder.typicode.com/posts/1
-    Should Be Equal As Strings    1  ${response.json()}[id]
 
 *** Keywords ***
 Authenticate as Admin
