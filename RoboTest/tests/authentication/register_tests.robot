@@ -9,8 +9,7 @@ Suite Setup    Authenticate as Admin
 Suite Teardown    Clean up and logout
 
 *** Variables ***
-${SERVER_URL}    http://localhost:8152/safeguard/api
-#${SERVER_URL}    %{BASE_API_URL}
+${SERVER_URL}    %{BASE_API_URL}
 ${REGISTER_API_URL}    ${SERVER_URL}/auth/register
 ${DELETE_USER_API_URL}    ${SERVER_URL}/cleanup/users
 ${admin_email}    admin1@dqtri.com

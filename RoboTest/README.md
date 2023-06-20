@@ -121,3 +121,26 @@ You can also add the resources/ , lib/ or keyword/ folders to the --pythonpath s
 ```commandline
 robot --pythonpath .:./lib:./resources:./keywords tests/authentication/login.robot
 ```
+
+## How to write configuration file requirements.txt
+
+```text
+###### Requirements without Version Specifiers ######
+nose
+nose-cov
+beautifulsoup4
+
+###### Requirements with Version Specifiers ######
+docopt == 0.6.1             # Version Matching. Must be version 0.6.1
+keyring >= 4.1.1            # Minimum version 4.1.1
+coverage != 3.5             # Version Exclusion. Anything except version 3.5
+Mopidy-Dirble ~= 1.1        # Compatible release. Same as >= 1.1, == 1.*
+```
+- Use the command below to install the packages according to the configuration file requirements.txt
+```commandline
+pip install -r requirements.txt
+```
+- To auto generate the current installed packages
+```commandline
+pip freeze -r requirements.txt
+```

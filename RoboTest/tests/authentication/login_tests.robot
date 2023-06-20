@@ -7,10 +7,11 @@ Resource    ../../resources/common.robot
 Resource    ../../resources/authentication.robot
 
 *** Variables ***
-${SERVER_URL}    http://localhost:8152/safeguard/api
+${SERVER_URL}    %{BASE_API_URL}
 ${LOGIN_API_URL}    ${SERVER_URL}/auth/login
 ${admin1_email}      admin1@dqtri.com
 ${admin1_password}      admin1
+
 
 *** Test Cases ***
 Login with Admin User

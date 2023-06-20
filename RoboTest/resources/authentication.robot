@@ -3,11 +3,10 @@ Documentation    Common authentication resources for the project
 Library    RequestsLibrary
 
 *** Variables ***
-${SERVER_URL}    http://localhost:8152/safeguard/api
-#${SERVER_URL}    %{BASE_API_URL}
-${LOGIN_API_URL}    ${SERVER_URL}/auth/login
-${REFRESH_API_URL}    ${SERVER_URL}/auth/refresh
-${LOGOUT_API_URL}    ${SERVER_URL}/auth/logout
+${BASE_API_URL}    %{BASE_API_URL}
+${LOGIN_API_URL}    ${BASE_API_URL}/auth/login
+${REFRESH_API_URL}    ${BASE_API_URL}/auth/refresh
+${LOGOUT_API_URL}    ${BASE_API_URL}/auth/logout
 
 *** Keywords ***
 Login

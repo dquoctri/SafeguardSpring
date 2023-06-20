@@ -14,7 +14,7 @@
     <option name="env">
       <map>
         <entry key="BASE_API_URL" value="http://localhost:8152/safeguard/api" />
-        <entry key="env" value="Development" />
+        <entry key="default_level" value="INFO" />
       </map>
     </option>
     <option name="workingDir" value="$ProjectFileDir$" />
