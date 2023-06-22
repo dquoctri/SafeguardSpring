@@ -5,10 +5,13 @@ Test Tags    v1.0.0  authentication  login
 Library     RequestsLibrary
 Resource    ../../resources/common.robot
 Resource    ../../resources/authentication.robot
+Suite Setup    Authenticate as Admin
+Suite Teardown    Clean up and logout
 
 *** Variables ***
 ${SERVER_URL}    %{BASE_API_URL}
 ${LOGIN_API_URL}    ${SERVER_URL}/auth/login
+${LOGIN_ATTEMPT_API_URL}    ${SERVER_URL}/cleanup/login-attempt
 ${admin1_email}      admin1@dqtri.com
 ${admin1_password}      admin1
 
@@ -25,7 +28,6 @@ Login with Admin User
     ${result}    Set Variable    ${response.json()}
     Should Not Be Empty   ${result}[accessToken]
     Should Not Be Empty   ${result}[refreshToken]
-    Logout    Bearer ${result}[refreshToken]
 
 Login with Empty Body
     [Documentation]    Verifies the system behavior when attempting to log in with an empty request body.
@@ -92,3 +94,55 @@ Login with Invalid Password Format
         ${response}    Login    ${admin1_email}  ${password}  expected_status=400
         Should Be Bad Request    ${response}
     END
+
+Login with Invalid Email and Password
+    [Documentation]    Tests the login functionality with invalid email and password credentials.
+    ...    Checks if the system handles this scenario appropriately and provides an expected response.
+    [Tags]    login-08
+    ${response}=    Login    invalid_email@dqtri.com    invalid_password   expected_status=401
+    #VALIDATIONS
+    ${status_code}=     Convert To String    ${response.status_code}
+    Should Be Equal    ${status_code}    401
+    ${result}    Set Variable    ${response.json()}
+    Should Be Equal    ${result}[status]  UNAUTHORIZED
+    Should Be Equal    ${result}[message]  Bad credentials
+    ${response}    Refresh    ${adminRefreshToken}
+
+    Delete Login Attempt    invalid_email@dqtri.com  Bearer ${response.json()}[accessToken]
+
+Login with Invalid Email and Password 5 Times
+    [Documentation]    Tests the login functionality with invalid email and password credentials.
+    ...    Checks if the system handles this scenario appropriately and provides an expected response.
+    [Tags]    login-08
+    ${response}=    Login    invalid_email@dqtri.com    invalid_password1   expected_status=401
+    ${response}=    Login    invalid_email@dqtri.com    invalid_password2   expected_status=401
+    ${response}=    Login    invalid_email@dqtri.com    invalid_password3   expected_status=401
+    ${response}=    Login    invalid_email@dqtri.com    invalid_password4   expected_status=401
+    ${response}=    Login    invalid_email@dqtri.com    invalid_password4   expected_status=401
+    ${response}=    Login    invalid_email@dqtri.com    invalid_password5   expected_status=422
+    #VALIDATIONS
+    ${status_code}=     Convert To String    ${response.status_code}
+    Should Be Equal    ${status_code}    422
+    ${result}    Set Variable    ${response.json()}
+    Should Be Equal    ${result}[status]  UNPROCESSABLE_ENTITY
+    Should Be Equal    ${result}[message]  invalid_email@dqtri.com has been locked due to multiple failed login attempts
+    ${response}    Refresh    ${adminRefreshToken}
+
+    Delete Login Attempt    invalid_email@dqtri.com  Bearer ${response.json()}[accessToken]
+
+
+*** Keywords ***
+Authenticate as Admin
+    ${response}    Login    ${admin1_email}  ${admin1_password}
+    Set Suite Variable    ${adminRefreshToken}  Bearer ${response.json()}[refreshToken]
+
+Clean up and logout
+    #Refresh an access token for a suite that spent times more than 5 minutes
+    ${response}    Refresh    ${adminRefreshToken}
+    #todo clean up
+    Logout    ${adminRefreshToken}
+
+Delete Login Attempt
+    [Arguments]  ${email}    ${adminToken}
+    ${headers}    Create Dictionary    Authorization=${adminToken}
+    DELETE    url=${LOGIN_ATTEMPT_API_URL}/${email}  headers=${headers}

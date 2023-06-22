@@ -43,7 +43,7 @@ public class LoginAttempt extends BaseEntity {
 
     public void setFailedAttempts(int value){
         this.failedAttempts = value;
-        if (value > 5) {
+        if (value >= 5) {
             this.failedAttempts = 5;
             this.isLockout = true;
         }

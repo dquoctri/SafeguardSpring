@@ -315,7 +315,7 @@ public class AuthControllerIntegrationTest extends AbstractIntegrationTest {
             ErrorResponse errorResponse = new ObjectMapper().readValue(json, ErrorResponse.class);
             assertThat(errorResponse).isNotNull();
             assertThat(errorResponse.getMessage())
-                    .isEqualTo("Your account has been locked due to multiple failed login attempts");
+                    .isEqualTo(loginPayload.getEmail()+ " has been locked due to multiple failed login attempts");
         }
 
         private LoginPayload createLoginPayload() {

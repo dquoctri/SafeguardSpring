@@ -1,7 +1,9 @@
 package com.dqtri.mango.safeguard.controller;
 
+import com.dqtri.mango.safeguard.model.LoginAttempt;
 import com.dqtri.mango.safeguard.model.SafeguardUser;
 import com.dqtri.mango.safeguard.model.Submission;
+import com.dqtri.mango.safeguard.repository.LoginAttemptRepository;
 import com.dqtri.mango.safeguard.repository.SubmissionRepository;
 import com.dqtri.mango.safeguard.repository.UserRepository;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -29,6 +31,7 @@ public class CleanupController {
 
     private final UserRepository userRepository;
     private final SubmissionRepository submissionRepository;
+    private final LoginAttemptRepository loginAttemptRepository;
 
     @DeleteMapping
     public ResponseEntity<String> cleanUpData() {
@@ -46,6 +49,15 @@ public class CleanupController {
         Optional<SafeguardUser> byEmail = userRepository.findByEmail(email);
         byEmail.ifPresent(userRepository::delete);
 
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/login-attempt/{email}")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Transactional
+    public ResponseEntity<Void> cleanupLoginAttempt(@PathVariable String email) {
+        Optional<LoginAttempt> byEmail = loginAttemptRepository.findByEmail(email);
+        byEmail.ifPresent(loginAttemptRepository::delete);
         return ResponseEntity.noContent().build();
     }
 }

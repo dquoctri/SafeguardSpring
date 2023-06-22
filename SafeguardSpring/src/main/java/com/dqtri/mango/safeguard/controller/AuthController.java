@@ -145,7 +145,7 @@ public class AuthController {
     private LoginAttempt tryLoginAttempt(String email) {
         LoginAttempt loginAttempt = loginAttemptRepository.findByEmail(email).orElse(new LoginAttempt(email));
         if (loginAttempt.isLockout()) {
-            throw new LoginFailedException("Your account has been locked due to multiple failed login attempts");
+            throw new LoginFailedException(String.format("%s has been locked due to multiple failed login attempts", email));
         }
         loginAttempt.setFailedAttempts(loginAttempt.getFailedAttempts() + 1);
         return loginAttemptRepository.save(loginAttempt);
