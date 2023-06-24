@@ -1,47 +1,76 @@
 *** Settings ***
 Documentation     This test suite contains test cases to verify the Create User API functionality.
 Test Tags    v1.0.0  user  user_creation
+Suite Setup    Suite Create User API Setup
+Suite Teardown    Suite Create User API Teardown
+Test Setup    Test Create User API Setup
 Library     RequestsLibrary
 Resource    ../../../resources/common.robot
-Resource    ../../../resources/authentication.robot
+Resource    ../../../resources/api_url.resource
+Resource    ../../../resources/test_user.resource
+Resource    ../../../keywords/authentication.robot
+Resource    ../../../keywords/clean_up.robot
+Resource    ../../../keywords/user.robot
 
 *** Variables ***
-${BASE_API_URL}    %{BASE_API_URL}
-${USER_API_URL}    ${BASE_API_URL}/users
-
+#your variables
 
 *** Test Cases ***
-#Test Create User API - Valid Data
-#    [Tags]    API
-#    Create User    validuser@example.com    password123    admin
-#
-#Test Create User API - Empty Email
-#    [Tags]    API
-#    Create User    ""    password123    admin
-#
-#Test Create User API - Empty Password
-#    [Tags]    API
-#    Create User    testuser@example.com    ""    admin
-#
-#Test Create User API - Invalid Role
-#    [Tags]    API
-#    Create User    testuser@example.com    password123    invalidrole
-#
+Test Create User API - Valid Data
+    [Tags]    API
+    ${payload}    Create Dictionary    email=${test1}[email]    password=${test1}[password]    role=SUBMITTER
+    ${response}=    Create User    ${payload}    ${adminAccessToken}   expected_status=201
+    #VALIDATIONS
+    ${status_code}    Convert To String    ${response.status_code}
+    Should Be Equal    ${status_code}  201
+    ${result}    Set Variable    ${response.json()}
+    Should Be True    ${result}[id] > 0
+    Should Be Equal    ${result}[email]  ${test1}[email]
+    Should Be Equal    ${result}[role]  SUBMITTER
+
+Test Create User API - Empty Body
+    [Tags]    API
+    ${payload}    Create Dictionary
+    ${response}=    Create User    ${payload}    ${adminAccessToken}    expected_status=400
+    Should Be Bad Request    ${response}
+
+Test Create User API - Empty Email
+    [Tags]    API
+    ${payload}    Create Dictionary   password=${test1}[password]    role=SUBMITTER
+    ${response}=    Create User    ${payload}    ${adminAccessToken}    expected_status=400
+    Should Be Bad Request    ${response}
+
+Test Create User API - Empty Password
+    [Tags]    API
+    ${payload}    Create Dictionary   email=${test1}[email]    role=SUBMITTER
+    ${response}=    Create User    ${payload}    ${adminAccessToken}    expected_status=400
+    Should Be Bad Request    ${response}
+
+Test Create User API - Invalid Role
+    [Tags]    API
+    ${payload}    Create Dictionary   email=${test1}[email]  password=${test1}[password]  role=HELLO
+    ${response}=    Create User    ${payload}    ${adminAccessToken}    expected_status=400
+    ${status_code}    Convert To String    ${response.status_code}
+    Should Be Equal    ${status_code}  400
+    ${result}    Set Variable    ${response.json()}
+    Should Be Equal    ${result}[title]  Bad Request
+    Should Be Equal    ${result}[detail]  Failed to read request
+
+#todo
 
 *** Keywords ***
-Create User
-    [Arguments]    ${body}  ${accessToken}  ${expected_status}=201
-    ${headers}    Create Dictionary    Content-Type=application/json  Authorizaion=${accessToken}
-#    ${body}    Create Dictionary    email=${email}  password=${password}
-    ${response}=    POST    url=${USER_API_URL}  json=${body}  headers=${headers}  expected_status=${expected_status}
-    RETURN    ${response}
+Suite Create User API Setup
+    ${response}    Login    ${admin1}[email]  ${admin1}[password]
+    Set Suite Variable    ${adminRefreshToken}  Bearer ${response.json()}[refreshToken]
+    Set Suite Variable    ${adminAccessToken}  Bearer ${response.json()}[accessToken]
 
-Create User
-    [Arguments]    ${accessToken}    ${email}    ${password}    ${role}
-    ${headers}    Create Dictionary    Content-Type=application/json  Authorizaion=${accessToken}
-    ${payload}    Create Dictionary    email=${email}    password=${password}    role=${role}
-    ${response}    POST    url=${USER_API_URL}    json=${payload}    headers=${headers}
-    Run Keyword If    '${response.status_code}' == '201'    Log    User created successfully
-    Run Keyword If    '${response.status_code}' == '400'    Log    Invalid data: ${response.text}
-#    Should Be Equal As Strings    ${response.status_code}    201
-#    Should Contain    ${response.text}    User created successfully
+Suite Create User API Teardown
+    Delete Test User    ${test1}[email]  ${adminAccessToken}
+    Logout    ${adminRefreshToken}
+
+Test Create User API Setup
+    ${response}    Refresh    ${adminRefreshToken}
+    ${accessToken}    Set Variable    Bearer ${response.json()}[accessToken]
+    Set Suite Variable    ${adminAccessToken}  ${accessToken}
+
+
