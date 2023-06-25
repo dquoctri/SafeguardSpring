@@ -6,11 +6,10 @@ Resource    ../../../resources/common.robot
 Resource    ../../../resources/api_url.resource
 Resource    ../../../resources/test_user.resource
 Resource    ../../../keywords/authentication.robot
+Resource    ../../../keywords/clean_up.robot
 Resource    ../../../keywords/user.robot
 
 *** Variables ***
-${SERVER_URL}    http://localhost:8152/safeguard/api
-#${SERVER_URL}    %{BASE_API_URL}
 
 *** Test Cases ***
 

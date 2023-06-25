@@ -6,7 +6,9 @@ Resource    ../../../resources/common.robot
 Resource    ../../../resources/api_url.resource
 Resource    ../../../resources/test_user.resource
 Resource    ../../../keywords/authentication.robot
+Resource    ../../../keywords/clean_up.robot
 Resource    ../../../keywords/user.robot
+Resource    ../../../keywords/submission.robot
 
 *** Variables ***
 

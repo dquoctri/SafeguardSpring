@@ -33,7 +33,7 @@ Update User
     RETURN    ${response}
 
 Delete User
-    [Arguments]    ${id}  ${body}  ${accessToken}  ${expected_status}=204
+    [Arguments]    ${id}  ${accessToken}  ${expected_status}=204
     ${headers}    Create Dictionary    Content-Type=application/json  Authorization=${accessToken}
-    ${response}=    GET    url=${USER_API_URL}/${id}  json=${body}  headers=${headers}  expected_status=${expected_status}
+    ${response}=    DELETE    url=${USER_API_URL}/${id}  headers=${headers}  expected_status=${expected_status}
     RETURN    ${response}

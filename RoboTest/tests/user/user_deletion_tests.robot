@@ -5,12 +5,12 @@ Suite Setup    Suite Delete User API Setup
 Suite Teardown    Suite Delete User API Teardown
 Test Setup    Test Delete User API Setup
 Library     RequestsLibrary
-Resource    ../../../resources/common.robot
-Resource    ../../../resources/api_url.resource
-Resource    ../../../resources/test_user.resource
-Resource    ../../../keywords/authentication.robot
-Resource    ../../../keywords/clean_up.robot
-Resource    ../../../keywords/user.robot
+Resource    ../../resources/common.robot
+Resource    ../../resources/api_url.resource
+Resource    ../../resources/test_user.resource
+Resource    ../../keywords/authentication.robot
+Resource    ../../keywords/clean_up.robot
+Resource    ../../keywords/user.robot
 
 *** Variables ***
 #your variables
@@ -20,6 +20,14 @@ Test Delete User API - Valid Data
     ${response}=    Delete User    ${test_user_id}  ${adminAccessToken}
     ${status_code}    Convert To String    ${response.status_code}
     Should Be Equal    ${status_code}  204
+
+Test Delete User API - Not existed Id
+    ${response}=    Delete User    0  ${adminAccessToken}  expected_status=404
+    ${status_code}    Convert To String    ${response.status_code}
+    Should Be Equal    ${status_code}  404
+    ${result}    Set Variable    ${response.json()}
+    Should Be Equal    ${result}[message]    User is not found with id: 0
+    Should Be True    '${result}[status]'    'NOT_FOUND'
 
 *** Keywords ***
 Suite Delete User API Setup
