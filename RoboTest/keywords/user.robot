@@ -9,15 +9,15 @@ Library    RequestsLibrary
 
 *** Keywords ***
 Get Users
-    [Arguments]    ${accessToken}  ${expected_status}=200
+    [Arguments]    ${params}  ${accessToken}  ${expected_status}=200
     ${headers}    Create Dictionary    Content-Type=application/json  Authorization=${accessToken}
-    ${response}=    GET    url=${USER_API_URL}  headers=${headers}  expected_status=${expected_status}
+    ${response}=    GET    url=${USER_API_URL}  params=${params}  headers=${headers}  expected_status=${expected_status}
     RETURN    ${response}
 
 Get User
-    [Arguments]    ${id}  ${body}  ${accessToken}  ${expected_status}=200
+    [Arguments]    ${id}  ${accessToken}  ${expected_status}=200
     ${headers}    Create Dictionary    Content-Type=application/json  Authorization=${accessToken}
-    ${response}=    GET    url=${USER_API_URL}/${id}  json=${body}  headers=${headers}  expected_status=${expected_status}
+    ${response}=    GET    url=${USER_API_URL}/${id}  headers=${headers}  expected_status=${expected_status}
     RETURN    ${response}
 
 Create User

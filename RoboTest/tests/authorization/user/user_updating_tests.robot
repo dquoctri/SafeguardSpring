@@ -2,6 +2,9 @@
 Documentation     This test suite contains test cases to verify the user ... functionality.
 Test Tags    v1.0.0  user  user_creation
 Library     RequestsLibrary
+Suite Setup    Suite Update User API Setup
+Suite Teardown    Suite Update User API Teardown
+Test Setup    Test Update User API Setup
 Resource    ../../../resources/common.robot
 Resource    ../../../resources/api_url.resource
 Resource    ../../../resources/test_user.resource
@@ -10,20 +13,76 @@ Resource    ../../../keywords/clean_up.robot
 Resource    ../../../keywords/user.robot
 
 *** Variables ***
+${manager}   ${manager1}
+${specialist}    ${specialist1}
+${submitter}    ${submitter1}
+${none}    ${none1}
+${test}    ${test1}
 
 *** Test Cases ***
+Test Update User API - Valid Data
+    ${payload}=    Create Dictionary    role=SPECIALIST
+    ${response}=    Update User    ${test_user_id}  ${payload}  ${adminAccessToken}
+    ${status_code}    Convert To String    ${response.status_code}
+    Should Be Equal    ${status_code}  200
+    ${result}    Set Variable    ${response.json()}
+    Should Be True    ${result}[id] > 0
+    Should Be Equal    ${result}[email]  ${test}[email]
+    Should Be Equal    ${result}[role]  SPECIALIST
+
+Test Update User API - Access Denied
+    Update User API with ${manager} - Access Denied
+    Update User API with ${specialist} - Access Denied
+    Update User API with ${submitter} - Access Denied
+    Update User API with ${none} - Access Denied
+
+Test Update User API without Access Token - Unauthorized
+    [Tags]    API
+    ${payload}=    Create Dictionary    role=SPECIALIST
+    ${response}=    Update User    ${test_user_id}  ${payload}  ''  expected_status=401
 
 *** Keywords ***
-Suite Create User API Setup
+Suite Update User API Setup
     ${response}    Login    ${admin1}[email]  ${admin1}[password]
     Set Suite Variable    ${adminRefreshToken}  Bearer ${response.json()}[refreshToken]
     Set Suite Variable    ${adminAccessToken}  Bearer ${response.json()}[accessToken]
+    ${payload}    Create Dictionary    email=${test1}[email]    password=${test1}[password]    role=SUBMITTER
+    ${response}=    Create User    ${payload}    ${adminAccessToken}   expected_status=201
+    ${result}    Set Variable    ${response.json()}
+    Set Suite Variable    ${test_user_id}  ${result}[id]
 
-Suite Create User API Teardown
-    Delete Test User    ${test1}[email]  ${adminAccessToken}
+Suite Update User API Teardown
+    Delete Test User    ${none}[email]  ${adminAccessToken}
+    Delete Test User    ${manager}[email]  ${adminAccessToken}
+    Delete Test User    ${submitter}[email]  ${adminAccessToken}
+    Delete Test User    ${specialist}[email]  ${adminAccessToken}
+    Delete Test User    ${test}[email]  ${adminAccessToken}
     Logout    ${adminRefreshToken}
 
-Test Create User API Setup
+Test Update User API Setup
     ${response}    Refresh    ${adminRefreshToken}
     ${accessToken}    Set Variable    Bearer ${response.json()}[accessToken]
     Set Suite Variable    ${adminAccessToken}  ${accessToken}
+
+Update User API with ${user} - Access Denied
+    Create User    ${user}    ${adminAccessToken}
+    ${response}=    Login    ${user}[email]  ${user}[password]
+    ${response}=    Refresh    Bearer ${response.json()}[refreshToken]
+    ${accessToken}    Set Variable    Bearer ${response.json()}[accessToken]
+    ${payload}=    Create Dictionary    role=SPECIALIST
+    ${response}=    Update User    ${test_user_id}  ${payload}  ${accessToken}  expected_status=403
+    Should Be Access Denied    ${response}
+
+Update User API with ${user} - Success
+    Create User    ${user}    ${adminAccessToken}
+    ${response}=    Login    ${user}[email]  ${user}[password]
+    ${response}=    Refresh    Bearer ${response.json()}[refreshToken]
+    ${accessToken}    Set Variable    Bearer ${response.json()}[accessToken]
+    ${payload}=    Create Dictionary    role=SPECIALIST
+    ${response}=    Update User    ${test_user_id}  ${payload}  ${accessToken}
+    ${status_code}    Convert To String    ${response.status_code}
+    Should Be Equal    ${status_code}  200
+    ${result}    Set Variable    ${response.json()}
+    Should Be True    ${result}[id] > 0
+    Should Be Equal    ${result}[email]  ${test}[email]
+    Should Be Equal    ${result}[role]  SUBMITTER
