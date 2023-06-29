@@ -11,7 +11,7 @@ Library    RequestsLibrary
 Get Users
     [Arguments]    ${params}  ${accessToken}  ${expected_status}=200
     ${headers}    Create Dictionary    Content-Type=application/json  Authorization=${accessToken}
-    ${response}=    GET    url=${USER_API_URL}  params=${params}  headers=${headers}  expected_status=${expected_status}
+    ${response}=    GET    url=${USER_API_URL}  headers=${headers}  params=${params}  expected_status=${expected_status}
     RETURN    ${response}
 
 Get User

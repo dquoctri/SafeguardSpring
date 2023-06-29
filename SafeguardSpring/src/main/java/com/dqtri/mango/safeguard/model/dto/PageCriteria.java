@@ -16,7 +16,7 @@ import java.util.List;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-public final class PageCriteria {
+public class PageCriteria {
     @Min(0)
     @Schema(example = "0")
     private int pageNumber = 0;

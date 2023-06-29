@@ -99,7 +99,7 @@ public class UserControllerIntegrationTest extends AbstractIntegrationTest {
         void getAllUsers_hasNoUser_returnEmptyPagination() throws Exception {
             Pageable pageable = PageRequest.of(0, 25, Sort.by(Sort.DEFAULT_DIRECTION, "pk"));
             Page<SafeguardUser> usersPage = new PageImpl<>(new ArrayList<>(), pageable, 0);
-            when(userRepository.findAll(pageable)).thenReturn(usersPage);
+            when(userRepository.findByRole(null, pageable)).thenReturn(usersPage);
             //then
             MvcResult mvcResult = performRequest(status().isOk());
             String json = mvcResult.getResponse().getContentAsString();
@@ -115,7 +115,7 @@ public class UserControllerIntegrationTest extends AbstractIntegrationTest {
             Pageable pageable = PageRequest.of(0, 25, Sort.by(Sort.DEFAULT_DIRECTION, "pk"));
             List<SafeguardUser> users = new ArrayList<>(createUserList(1));
             Page<SafeguardUser> usersPage = new PageImpl<>(users, pageable, 1);
-            when(userRepository.findAll(pageable)).thenReturn(usersPage);
+            when(userRepository.findByRole(null, pageable)).thenReturn(usersPage);
             //then
             MvcResult mvcResult = performRequest(status().isOk());
             String json = mvcResult.getResponse().getContentAsString();
@@ -132,7 +132,7 @@ public class UserControllerIntegrationTest extends AbstractIntegrationTest {
             Pageable pageable = PageRequest.of(0, 25, Sort.by(Sort.DEFAULT_DIRECTION, "pk"));
             List<SafeguardUser> users = new ArrayList<>(createUserList(numberOfUsers));
             Page<SafeguardUser> usersPage = new PageImpl<>(users, pageable, numberOfUsers);
-            when(userRepository.findAll(pageable)).thenReturn(usersPage);
+            when(userRepository.findByRole(null, pageable)).thenReturn(usersPage);
             //then
             MvcResult mvcResult = performRequest(status().isOk());
             String json = mvcResult.getResponse().getContentAsString();
@@ -151,7 +151,7 @@ public class UserControllerIntegrationTest extends AbstractIntegrationTest {
             Pageable pageable = PageRequest.of(pageNumber, pageSize, Sort.by(Sort.DEFAULT_DIRECTION, "pk"));
             List<SafeguardUser> users = new ArrayList<>(createUserList(numberOfUsers));
             Page<SafeguardUser> usersPage = new PageImpl<>(users, pageable, numberOfUsers);
-            when(userRepository.findAll(pageable)).thenReturn(usersPage);
+            when(userRepository.findByRole(null, pageable)).thenReturn(usersPage);
             //then
             MvcResult mvcResult = performRequest(pageNumber, pageSize, status().isOk());
             String json = mvcResult.getResponse().getContentAsString();

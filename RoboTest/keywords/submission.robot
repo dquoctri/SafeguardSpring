@@ -9,15 +9,15 @@ Library    RequestsLibrary
 
 *** Keywords ***
 Get Submissions
-    [Arguments]    ${accessToken}  ${expected_status}=200
+    [Arguments]    ${params}  ${accessToken}  ${expected_status}=200
     ${headers}    Create Dictionary    Content-Type=application/json  Authorization=${accessToken}
-    ${response}=    GET    url=${SUBMISSION_API_URL}  headers=${headers}  expected_status=${expected_status}
+    ${response}=    GET    url=${SUBMISSION_API_URL}  headers=${headers}  params=${params}  expected_status=${expected_status}
     RETURN    ${response}
 
 Get Submission
-    [Arguments]    ${id}  ${body}  ${accessToken}  ${expected_status}=200
+    [Arguments]    ${id}  ${accessToken}  ${expected_status}=200
     ${headers}    Create Dictionary    Content-Type=application/json  Authorization=${accessToken}
-    ${response}=    GET    url=${SUBMISSION_API_URL}/${id}  json=${body}  headers=${headers}  expected_status=${expected_status}
+    ${response}=    GET    url=${SUBMISSION_API_URL}/${id}  headers=${headers}  expected_status=${expected_status}
     RETURN    ${response}
 
 Create Submission
@@ -33,7 +33,7 @@ Update Submission
     RETURN    ${response}
 
 Delete Submission
-    [Arguments]    ${id}  ${body}  ${accessToken}  ${expected_status}=204
+    [Arguments]    ${id}  ${accessToken}  ${expected_status}=204
     ${headers}    Create Dictionary    Content-Type=application/json  Authorization=${accessToken}
-    ${response}=    GET    url=${SUBMISSION_API_URL}/${id}  json=${body}  headers=${headers}  expected_status=${expected_status}
+    ${response}=    GET    url=${SUBMISSION_API_URL}/${id}  headers=${headers}  expected_status=${expected_status}
     RETURN    ${response}

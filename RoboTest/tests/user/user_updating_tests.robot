@@ -21,7 +21,7 @@ Suite Create User API Setup
     Set Suite Variable    ${adminAccessToken}  Bearer ${response.json()}[accessToken]
 
 Suite Create User API Teardown
-    Delete Test User    ${test1}[email]  ${adminAccessToken}
+    Delete Test User    ${user1}[email]  ${adminAccessToken}
     Logout    ${adminRefreshToken}
 
 Test Create User API Setup

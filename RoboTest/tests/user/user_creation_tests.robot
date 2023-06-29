@@ -18,14 +18,14 @@ Resource    ../../keywords/user.robot
 *** Test Cases ***
 Test Create User API - Valid Data
     [Tags]    API
-    ${payload}    Create Dictionary    email=${test1}[email]    password=${test1}[password]    role=SUBMITTER
+    ${payload}    Create Dictionary    email=${user1}[email]    password=${user1}[password]    role=SUBMITTER
     ${response}=    Create User    ${payload}    ${adminAccessToken}   expected_status=201
     #VALIDATIONS
     ${status_code}    Convert To String    ${response.status_code}
     Should Be Equal    ${status_code}  201
     ${result}    Set Variable    ${response.json()}
     Should Be True    ${result}[id] > 0
-    Should Be Equal    ${result}[email]  ${test1}[email]
+    Should Be Equal    ${result}[email]  ${user1}[email]
     Should Be Equal    ${result}[role]  SUBMITTER
 
 Test Create User API - Empty Body
@@ -36,19 +36,19 @@ Test Create User API - Empty Body
 
 Test Create User API - Empty Email
     [Tags]    API
-    ${payload}    Create Dictionary   password=${test1}[password]    role=SUBMITTER
+    ${payload}    Create Dictionary   password=${user1}[password]    role=SUBMITTER
     ${response}=    Create User    ${payload}    ${adminAccessToken}    expected_status=400
     Should Be Bad Request    ${response}
 
 Test Create User API - Empty Password
     [Tags]    API
-    ${payload}    Create Dictionary   email=${test1}[email]    role=SUBMITTER
+    ${payload}    Create Dictionary   email=${user1}[email]    role=SUBMITTER
     ${response}=    Create User    ${payload}    ${adminAccessToken}    expected_status=400
     Should Be Bad Request    ${response}
 
 Test Create User API - Invalid Role
     [Tags]    API
-    ${payload}    Create Dictionary   email=${test1}[email]  password=${test1}[password]  role=HELLO
+    ${payload}    Create Dictionary   email=${user1}[email]  password=${user1}[password]  role=HELLO
     ${response}=    Create User    ${payload}    ${adminAccessToken}    expected_status=400
     ${status_code}    Convert To String    ${response.status_code}
     Should Be Equal    ${status_code}  400
@@ -65,7 +65,7 @@ Suite Create User API Setup
     Set Suite Variable    ${adminAccessToken}  Bearer ${response.json()}[accessToken]
 
 Suite Create User API Teardown
-    Delete Test User    ${test1}[email]  ${adminAccessToken}
+    Delete Test User    ${user1}[email]  ${adminAccessToken}
     Logout    ${adminRefreshToken}
 
 Test Create User API Setup

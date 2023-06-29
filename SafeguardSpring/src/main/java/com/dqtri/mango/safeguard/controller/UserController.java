@@ -6,7 +6,7 @@ import com.dqtri.mango.safeguard.annotation.Validation400ApiResponses;
 import com.dqtri.mango.safeguard.exception.ConflictException;
 import com.dqtri.mango.safeguard.model.LoginAttempt;
 import com.dqtri.mango.safeguard.model.SafeguardUser;
-import com.dqtri.mango.safeguard.model.dto.PageCriteria;
+import com.dqtri.mango.safeguard.model.dto.UserPageCriteria;
 import com.dqtri.mango.safeguard.model.dto.payload.ResetPasswordPayload;
 import com.dqtri.mango.safeguard.model.dto.payload.UserCreatingPayload;
 import com.dqtri.mango.safeguard.model.dto.payload.UserUpdatingPayload;
@@ -69,9 +69,9 @@ public class UserController {
     @Transactional(readOnly = true)
     @GetMapping("/users")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SPECIALIST', 'SUBMITTER')")
-    public ResponseEntity<Page<UserResponse>> getUsers(@Valid PageCriteria pageCriteria) {
+    public ResponseEntity<Page<UserResponse>> getUsers(@Valid UserPageCriteria pageCriteria) {
         PageRequest pageable = pageCriteria.toPageable("pk");
-        Page<SafeguardUser> page = userRepository.findAll(pageable);
+        Page<SafeguardUser> page = userRepository.findByRole(pageCriteria.getRole(), pageable);
         List<UserResponse> userResponses = UserResponse.buildFromUsers(page.getContent());
         Page<UserResponse> pagination = Helper.createPagination(userResponses, page);
         return ResponseEntity.ok(pagination);

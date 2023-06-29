@@ -14,8 +14,8 @@ Resource    ../../keywords/user.robot
 
 *** Variables ***
 #User list
-${admin}   ${admin1}
-${manager}   ${manager1}
+${admin}    ${admin1}
+${manager}    ${manager1}
 ${specialist}    ${specialist1}
 ${submitter}    ${submitter1}
 ${none}    ${none1}

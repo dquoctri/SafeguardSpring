@@ -102,7 +102,7 @@ public class UserControllerAuthorizationTest extends AbstractIntegrationTest {
         private void assertOkRequest() throws Exception {
             Pageable pageable = PageRequest.of(0, 25, Sort.by(Sort.DEFAULT_DIRECTION, "pk"));
             Page<SafeguardUser> usersPage = new PageImpl<>(new ArrayList<>(), pageable, 0);
-            when(userRepository.findAll(pageable)).thenReturn(usersPage);
+            when(userRepository.findByRole(null, pageable)).thenReturn(usersPage);
             //then
             performRequest(status().isOk());
         }
@@ -112,7 +112,7 @@ public class UserControllerAuthorizationTest extends AbstractIntegrationTest {
         void getAllUsers_withProcessor_returnPagination(String role) throws Exception {
             Pageable pageable = PageRequest.of(0, 25, Sort.by(Sort.DEFAULT_DIRECTION, "pk"));
             Page<SafeguardUser> usersPage = new PageImpl<>(new ArrayList<>(), pageable, 0);
-            when(userRepository.findAll(pageable)).thenReturn(usersPage);
+            when(userRepository.findByRole(null, pageable)).thenReturn(usersPage);
             RequestPostProcessor user = user("appuser@dqtri.com").password("******").roles(role);
             //then
             performRequest(user, status().isOk());

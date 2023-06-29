@@ -16,6 +16,7 @@ import com.dqtri.mango.safeguard.model.dto.payload.AssignPayload;
 import com.dqtri.mango.safeguard.model.dto.payload.SubmissionPayload;
 import com.dqtri.mango.safeguard.model.dto.response.ErrorResponse;
 import com.dqtri.mango.safeguard.model.dto.response.SubmissionResponse;
+import com.dqtri.mango.safeguard.model.dto.response.UserResponse;
 import com.dqtri.mango.safeguard.model.enums.Status;
 import com.dqtri.mango.safeguard.repository.SubmissionRepository;
 import com.dqtri.mango.safeguard.repository.UserRepository;
@@ -110,7 +111,8 @@ public class SubmissionController {
         Submission submission = submissionPayload.toSubmission();
         submission.setSubmitter(currentUser.getSafeguardUser());
         Submission saved = submissionRepository.save(submission);
-        return ResponseEntity.ok(new SubmissionResponse(saved));
+//        return ResponseEntity.ok(new SubmissionResponse(saved));
+        return new ResponseEntity<>(new SubmissionResponse(saved), HttpStatus.CREATED);
     }
 
     @Operation(summary = "Update submission", description = "Update an existing submission with the provided details")

@@ -21,13 +21,13 @@ Test Register API - New User with Basic
     [Documentation]    Tests the successful registration of a new user with basic valid information.
     [Tags]    register-01  smoke-test
     No Operation
-    ${response}    Register    ${test1}[email]  ${test1}[password]
+    ${response}    Register    ${user1}[email]  ${user1}[password]
     #VALIDATIONS
     ${status_code}    Convert To String    ${response.status_code}
     Should Be Equal    ${status_code}  200
     ${result}    Set Variable    ${response.json()}
     Should Be True    ${result}[id] > 0
-    Should Be Equal    ${result}[email]  ${test1}[email]
+    Should Be Equal    ${result}[email]  ${user1}[email]
     Should Be Equal    ${result}[role]  SUBMITTER
 
 Test Register API - Empty Body
@@ -44,7 +44,7 @@ Test Register API - without Email
     ...    Checks if the system detects the absence of the email field and provides an appropriate response.
     [Tags]    register-03
     ${headers}=    Create Dictionary    Content-Type=application/json
-    ${body}=    Create Dictionary  password=${test1}[password]
+    ${body}=    Create Dictionary  password=${user1}[password]
     ${response}=  POST  url=${REGISTER_API_URL}  json=${body}  headers=${headers}  expected_status=400
     Should Be Bad Request    ${response}
 
@@ -53,7 +53,7 @@ Test Register API - without Password
     ...    Tests if the system correctly identifies the missing password and handles it accordingly.
     [Tags]    register-04
     ${headers}=    Create Dictionary    Content-Type=application/json
-    ${body}=    Create Dictionary  email=${test1}[email]
+    ${body}=    Create Dictionary  email=${user1}[email]
     ${response}=  POST  url=${REGISTER_API_URL}  json=${body}  headers=${headers}  expected_status=400
     Should Be Bad Request    ${response}
 
@@ -62,7 +62,7 @@ Test Register API - Content Type application/text
     ...    specifically "application/text." Verifies if the system rejects the request with an appropriate response.
     [Tags]    register-05
     ${headers}=    Create Dictionary    Content-Type=application/text
-    ${body}=    Create Dictionary    email=${test1}[email]  password=${test1}[password]
+    ${body}=    Create Dictionary    email=${user1}[email]  password=${user1}[password]
     ${response}=  POST  url=${REGISTER_API_URL}  json=${body}  headers=${headers}  expected_status=415
     #VALIDATIONS
     ${status_code}    Convert To String    ${response.status_code}
@@ -78,7 +78,7 @@ Test Register API - Invalid Email Format
     ${too_long_email}    Set Variable    Loremipsumdolorsitamet5consecteturadipiscingelit5seddoeiusmodtemporincididuntutlaboreetdoloremagnaaliqua.Utenimadminimveniam5quisnostrudexercitationullamcolaborisnisiutaliquipexeacommodoconsequat.Duisauteiruredolorinreprehenderitinvoluptatevelitessecillumdoloreeufugiatnullapariatur3Excepteursintoccaecatcupida@dqtri.com
     @{invalid_formar_emails}    Create List    invalidEmailFormat  invalidEmailFormat@  @invalidEmailFormat"  invalid@Email@Format  ${too_long_email}
     FOR    ${email}    IN    @{invalid_formar_emails}
-    ${response}    Register    ${email}  ${test1}[password]  expected_status=400
+    ${response}    Register    ${email}  ${user1}[password]  expected_status=400
     Should Be Bad Request    ${response}
     END
 
@@ -88,7 +88,7 @@ Test Register API - Invalid Password Format
     [Tags]    register-07
     @{invalid_format_passwords}    Create List    st  ''   '         '  too_long_password_that_more_than_24_characters
     FOR    ${password}    IN    @{invalid_format_passwords}
-        ${response}    Register    ${test1}[email]  ${password}  expected_status=400
+        ${response}    Register    ${user1}[email]  ${password}  expected_status=400
         Should Be Bad Request    ${response}
     END
 
@@ -97,7 +97,7 @@ Test Register API - Existed User Email
     ...    with an existing user account. Verifies if the system correctly detects the duplicate email and handles it appropriately.
     [Tags]    register-08
     ${headers}=    Create Dictionary    Content-Type=application/json
-    ${body}=    Create Dictionary    email=${admin1}[email]  password=${test1}[password]
+    ${body}=    Create Dictionary    email=${admin1}[email]  password=${user1}[password]
     ${response}=  POST  url=${REGISTER_API_URL}  json=${body}  headers=${headers}  expected_status=409
     #VALIDATIONS
     ${status_code}    Convert To String    ${response.status_code}
@@ -113,7 +113,7 @@ Suite Register API Setup
     Set Suite Variable    ${adminAccessToken}  Bearer ${response.json()}[accessToken]
 
 Suite Register API Teardown
-    Delete Test User    ${test1}[email]  ${adminAccessToken}
+    Delete Test User    ${user1}[email]  ${adminAccessToken}
     Logout    ${adminRefreshToken}
 
 Test Register API Setup

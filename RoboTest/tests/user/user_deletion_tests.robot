@@ -34,7 +34,7 @@ Suite Delete User API Setup
     ${response}    Login    ${admin1}[email]  ${admin1}[password]
     Set Suite Variable    ${adminRefreshToken}  Bearer ${response.json()}[refreshToken]
     Set Suite Variable    ${adminAccessToken}  Bearer ${response.json()}[accessToken]
-    ${payload}    Create Dictionary    email=${test1}[email]    password=${test1}[password]    role=SUBMITTER
+    ${payload}    Create Dictionary    email=${user1}[email]    password=${user1}[password]    role=SUBMITTER
     ${response}=    Create User    ${payload}    ${adminAccessToken}   expected_status=201
     ${result}    Set Variable    ${response.json()}
     Set Suite Variable    ${test_user_id}  ${result}[id]
