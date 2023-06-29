@@ -100,7 +100,7 @@ Variables data/master-data/users.py
 
 Tests can be run with the following command (assuming you are in the project root folder RoboTest):
 ```commandline
-robot --pythonpath . tests
+robot -d ./results --pythonpath . --include API --variable BASE_API_URL=http://localhost:8152/safeguard/api --timestampoutputs tests
 ```
 
 To run the tests, we need to tell Robot Framework where to search for the libraries, resource and variable files. If we run it without any arguments, we will get an error:
