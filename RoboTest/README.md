@@ -46,20 +46,28 @@ The project root folder contains the _.gitlab-ci.yml_ file for _CI/CD_, the .git
 RoboTest
 ├── tests
 │   ├── authentication
-│   │   ├── register.robot
-│   │   ├── login.robot
+│   │   ├── register_tests.robot
+│   │   ├── login_tests.robot
+│   │   
+│   ├── authorization
+│   │   ├── user_apis_tests.robot
+│   │   ├── submission_apis_tests.robot
+│   │   
+│   ├── user
+│   │   ├── user_creation_tests.robot
+│   │   ├── user_updating_tests.robot
+│   │   ├── ...
 │   │   
 │   ├── submission
-│   │   ├── submission_searching.robot
-│   │   ├── submission_creating.robot
-│   │   ├── submission_updating.robot
+│   │   ├── submisison_creation_tests.robot
+│   │   ├── ...
 │   │   
 │   ├── ...
 │   
 ├── resources
-│   ├── common.resource
+│   ├── common.robot
 │   ├── general.resource
-│   ├── some_other.resource
+│   ├── test_user.resource
 │   ├── master-data
 │   │   ├── login.resource
 │   │   ├── users.resource
@@ -75,11 +83,9 @@ RoboTest
 │   │   ├── users.py
 │   │   ├── ...
 │   │
-│   ├── submission
-│   │   ├── submission_creation.yaml
-│   │   ├── submission_processing.yaml
-│   │   ├── ...
-│   │   
+│   ├── user.yaml
+│   ├── submission.yaml
+│   ├── ...
 │
 ├── .gitlab-ci.yml
 ├── .gitignore
@@ -100,30 +106,10 @@ Variables data/master-data/users.py
 
 Tests can be run with the following command (assuming you are in the project root folder RoboTest):
 ```commandline
-robot -d ./results --pythonpath . --include API --variable BASE_API_URL=http://localhost:8152/safeguard/api --timestampoutputs tests
-```
-
-To run the tests, we need to tell Robot Framework where to search for the libraries, resource and variable files. If we run it without any arguments, we will get an error:
-```commandline
-$ robot tests/authentication/login.robot
-[Error] Error in file 'tests/suiteA.robot': ...
-Resource file 'resources/general.resource' does not exist.
-...
-```
-We can add the project root folder my_project/ folder to the --pythonpath command line argument:
-```commandline
-robot --pythonpath . tests/authentication/login.robot
-```
-
-**TIP** 
-
-You can also add the resources/ , lib/ or keyword/ folders to the --pythonpath setting:
-```commandline
-robot --pythonpath .:./lib:./resources:./keywords tests/authentication/login.robot
+robot --include API -d ./results --variable BASE_API_URL=http://localhost:8152/safeguard/api --pythonpath . --timestampoutputs tests
 ```
 
 ## How to write configuration file requirements.txt
-
 ```text
 ###### Requirements without Version Specifiers ######
 nose

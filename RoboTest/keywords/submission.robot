@@ -35,5 +35,5 @@ Update Submission
 Delete Submission
     [Arguments]    ${id}  ${accessToken}  ${expected_status}=204
     ${headers}    Create Dictionary    Content-Type=application/json  Authorization=${accessToken}
-    ${response}=    GET    url=${SUBMISSION_API_URL}/${id}  headers=${headers}  expected_status=${expected_status}
+    ${response}=    DELETE    url=${SUBMISSION_API_URL}/${id}  headers=${headers}  expected_status=${expected_status}
     RETURN    ${response}

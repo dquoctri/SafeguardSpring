@@ -3,6 +3,7 @@ package com.dqtri.mango.safeguard.security.permissions;
 import com.dqtri.mango.safeguard.model.SafeguardUser;
 import com.dqtri.mango.safeguard.model.Submission;
 import com.dqtri.mango.safeguard.model.enums.Role;
+import com.dqtri.mango.safeguard.model.enums.Status;
 import com.dqtri.mango.safeguard.repository.SubmissionRepository;
 import com.dqtri.mango.safeguard.security.AppUserDetails;
 import jakarta.persistence.EntityNotFoundException;
@@ -12,23 +13,28 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
+import java.util.function.Predicate;
 
 @Slf4j
 @RequiredArgsConstructor
-@Component("submissionOwner")
-public class SubmissionOwnerPermission extends Permission {
+@Component("isAssignedUser")
+public class AssignedUserPermission extends Permission {
 
     private final SubmissionRepository submissionRepository;
 
     @Override
     public boolean isAllowed(Authentication authentication, Object targetDomainObject) {
-        AppUserDetails currentUser = (AppUserDetails) authentication.getPrincipal();
-        SafeguardUser safeguardUser = currentUser.getSafeguardUser();
-        if(Role.ADMIN.equals(safeguardUser.getRole())) return true;
-
         long submissionId = (long) targetDomainObject;
         Submission submission = getSubmissionOrElseThrow(submissionId);
-        return safeguardUser.equals(submission.getSubmitter());
+        Predicate<Status> isWaitingForApproval = state -> (state == Status.ASSIGNED);
+        if (!isWaitingForApproval.test(submission.getStatus())) {
+            throw new IllegalArgumentException("The submission has invalid state");
+        }
+        AppUserDetails currentUser = (AppUserDetails) authentication.getPrincipal();
+        SafeguardUser safeguardUser = currentUser.getSafeguardUser();
+        if (Role.ADMIN.equals(safeguardUser.getRole())) return true;
+
+        return safeguardUser.equals(submission.getAssignedUser());
     }
 
     private Submission getSubmissionOrElseThrow(Long id) {

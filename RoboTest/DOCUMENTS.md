@@ -1,30 +1,21 @@
+## Here are some commonly used library document links for testing REST APIs in Robot Framework:
 
-## Here are some commonly used keywords for testing REST APIs in Robot Framework:
+## Robot Framework
 
-**Create Session**: Creates a new session to establish a connection with the API endpoint.
+Robot Framework is a generic open source automation framework. 
+It can be used for test automation and robotic process automation (RPA).
+https://robotframework.org/
 
-**Delete All Sessions**: Deletes all active sessions.
+## RequestsLibrary
+RequestsLibrary is a Robot Framework library aimed to provide HTTP api testing functionalities by wrapping the well known Python Requests Library.
+https://docs.robotframework.org/docs/different_libraries/requests
 
-**GET**: Sends a GET request to retrieve information from the API.
+```text
+pip install robotframework-requests
+```
+### Restful Booker
+See examples for (Restful Booker[https://docs.robotframework.org/docs/examples/restfulbooker])
 
-**POST**: Sends a POST request to create new resources or send data to the API.
 
-**PUT**: Sends a PUT request to update existing resources in the API.
 
-**PATH**: Sends a PATCH request to partially update existing resources in the API.
 
-**DELETE**: Sends a DELETE request to delete resources from the API.
-
-**JSON Should Contain**: Verifies that a JSON response contains a specific key-value pair.
-
-**Status Should Be**: Asserts the HTTP status code of the response.
-
-**Element Should Exist**: Checks whether a specific element exists in the API response.
-
-**Element Text Should Be**: Verifies the text value of a particular element in the response.
-
-**Element Count Should Be**: Asserts the number of occurrences of a specific element in the response.
-
-**Wait Until Response Is Ready**: Waits until the API response is ready or for a specific condition to be met.
-
-**Log**: Logs a message to the Robot Framework log file.

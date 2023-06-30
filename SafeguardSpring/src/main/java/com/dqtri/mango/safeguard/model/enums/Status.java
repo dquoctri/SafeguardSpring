@@ -1,7 +1,9 @@
 package com.dqtri.mango.safeguard.model.enums;
 
 public enum Status {
-    AWAITING_APPROVAL,
+    DRAFT,
+    SUBMITTED,
+    ASSIGNED,
     REJECTED,
     APPROVED
 }

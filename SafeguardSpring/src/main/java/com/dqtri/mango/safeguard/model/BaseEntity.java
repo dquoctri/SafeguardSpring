@@ -1,6 +1,5 @@
 package com.dqtri.mango.safeguard.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Column;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -12,7 +11,7 @@ import lombok.Setter;
 
 @Setter
 @Getter
-@EqualsAndHashCode
+@EqualsAndHashCode(exclude = {"pk"})
 @MappedSuperclass
 public abstract class BaseEntity {
     @Id

@@ -4,6 +4,7 @@ Test Tags    API  authorization  submission
 Suite Setup    Suite Authorization Submission APIs Setup
 Suite Teardown    Suite Authorization Submission APIs Teardown
 Test Setup    Test Authorization Submission APIs Setup
+Test Teardown    Test Authorization Submission APIs Teardown
 Library     RequestsLibrary
 Resource    ../../resources/common.robot
 Resource    ../../resources/api_url.resource
@@ -30,7 +31,7 @@ ${noneRefreshToken}
 #payload
 ${existed_id}    0
 ${new_id}    0
-&{submissionPayload}    content=Example content
+&{submissionPayload}    status=DRAFT  content=Example content
 &{pageCriteria}    pageNumber=0  pageSize=25
 
 *** Test Cases ***
@@ -61,19 +62,18 @@ Test NO Access Token attempts to Update Submission got UNAUTHORIZED
     Update Submission    ${existed_id}  ${payload}  ''  expected_status=401
 
 Test ADMIN user can Create Submission
-    [Documentation]    This test verifies that a user with the role ADMIN can successfully create a new user.
-    [Tags]    user_author_06  create_user
+    [Documentation]    This test verifies that a user with the role ADMIN can successfully create a new submission.
+    [Tags]    submission_author_06  create_submission
     ${response}=    Create Submission    ${submissionPayload}  ${adminAccessToken}  expected_status=201
     ${result}    Set Variable    ${response.json()}
     Should Be True    ${result}[id] > 0
-    Set Suite Variable    ${new_id}    ${result}[id] > 0
-#    Should Be Equal    ${result}[email]  ${existed_user}[email]
+    Set Suite Variable    ${new_id}    ${result}[id]
+    Should Be Equal    ${result}[content]  ${submissionPayload}[content]
+    Should Be Equal    ${result}[status]  DRAFT
 
 *** Keywords ***
 Suite Authorization Submission APIs Setup
     Login with Admin
-#    ${response}=    Create User    ${existed_user}    ${adminAccessToken}   expected_status=201
-#    Set Suite Variable    ${existed_user_id}  ${response.json()}[id]
     Create Manager and Login with Manager
     Create Specilist and Login with Specilist
     Create Submitter and Login with Submitter
@@ -120,6 +120,11 @@ Suite Authorization Submission APIs Teardown
 Test Authorization Submission APIs Setup
     ${response}    Refresh    ${adminRefreshToken}
     Set Suite Variable    ${adminAccessToken}  Bearer ${response.json()}[accessToken]
+
+Test Authorization Submission APIs Teardown
+    ${response}    Refresh    ${adminRefreshToken}
+    Set Suite Variable    ${adminAccessToken}  Bearer ${response.json()}[accessToken]
+    Delete Test Submission    ${new_id}  Bearer ${response.json()}[accessToken]
 
 Should Be Simple Pagination Response
     [Arguments]    ${result}

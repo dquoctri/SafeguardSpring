@@ -14,6 +14,7 @@ ${REGISTER_API_URL}    ${BASE_API_URL}/auth/register
 #Clean up urls
 ${DELETE_USER_API_URL}    ${BASE_API_URL}/cleanup/users
 ${LOGIN_ATTEMPT_API_URL}    ${BASE_API_URL}/cleanup/login-attempt
+${DELETE_SUBMISSION_API_URL}    ${BASE_API_URL}/cleanup/submissions
 
 #feature urls
 ${USER_API_URL}    ${BASE_API_URL}/users

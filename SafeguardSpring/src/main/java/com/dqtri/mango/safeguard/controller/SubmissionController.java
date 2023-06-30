@@ -11,12 +11,13 @@ import com.dqtri.mango.safeguard.annotation.Validation400ApiResponses;
 import com.dqtri.mango.safeguard.exception.LockedException;
 import com.dqtri.mango.safeguard.model.SafeguardUser;
 import com.dqtri.mango.safeguard.model.Submission;
-import com.dqtri.mango.safeguard.model.dto.PageCriteria;
+import com.dqtri.mango.safeguard.model.dto.SubmissionPageCriteria;
+import com.dqtri.mango.safeguard.model.dto.payload.ApprovalPayload;
 import com.dqtri.mango.safeguard.model.dto.payload.AssignPayload;
 import com.dqtri.mango.safeguard.model.dto.payload.SubmissionPayload;
 import com.dqtri.mango.safeguard.model.dto.response.ErrorResponse;
 import com.dqtri.mango.safeguard.model.dto.response.SubmissionResponse;
-import com.dqtri.mango.safeguard.model.dto.response.UserResponse;
+import com.dqtri.mango.safeguard.model.enums.Role;
 import com.dqtri.mango.safeguard.model.enums.Status;
 import com.dqtri.mango.safeguard.repository.SubmissionRepository;
 import com.dqtri.mango.safeguard.repository.UserRepository;
@@ -33,11 +34,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
@@ -50,6 +49,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.function.Predicate;
 
 @RestController
 @RequiredArgsConstructor
@@ -71,9 +71,10 @@ public class SubmissionController {
     @Transactional(readOnly = true)
     @GetMapping("/submissions")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SPECIALIST', 'SUBMITTER')")
-    public ResponseEntity<Page<SubmissionResponse>> getSubmissions(@Valid PageCriteria pageCriteria) {
+    public ResponseEntity<Page<SubmissionResponse>> getSubmissions(@Valid SubmissionPageCriteria pageCriteria) {
         Pageable pageable = pageCriteria.toPageable("pk");
-        Page<Submission> page = submissionRepository.findAll(pageable);
+        Page<Submission> page = submissionRepository
+                .findByStatus(pageCriteria.getStatus(), pageCriteria.getSubmitterEmail(), pageable);
         List<SubmissionResponse> submissionResponses = SubmissionResponse.buildFromSubmissions(page.getContent());
         Page<SubmissionResponse> pagination = Helper.createPagination(submissionResponses, page);
         return ResponseEntity.ok(pagination);
@@ -111,7 +112,6 @@ public class SubmissionController {
         Submission submission = submissionPayload.toSubmission();
         submission.setSubmitter(currentUser.getSafeguardUser());
         Submission saved = submissionRepository.save(submission);
-//        return ResponseEntity.ok(new SubmissionResponse(saved));
         return new ResponseEntity<>(new SubmissionResponse(saved), HttpStatus.CREATED);
     }
 
@@ -133,10 +133,41 @@ public class SubmissionController {
     public ResponseEntity<SubmissionResponse> updateSubmission(@PathVariable("id") Long id,
                                                        @RequestBody @Valid SubmissionPayload submissionPayload) {
         Submission submission = getSubmissionOrElseThrow(id);
-        if (submission.getAssignedUser() != null) {
-            throw new LockedException("The submission is assigned");
+        if (!Status.DRAFT.equals(submission.getStatus())) {
+            throw new LockedException("The submission is locked");
         }
-        submission.setContent(submissionPayload.getContent());
+        Submission newSubmission = submissionPayload.toSubmission();
+        submission.setContent(newSubmission.getContent());
+        submission.setStatus(newSubmission.getStatus());
+        Submission saved = submissionRepository.save(submission);
+        return ResponseEntity.ok(new SubmissionResponse(saved));
+    }
+
+    @Operation(summary = "Assign submission", description = "Assign submission for specific specialist by email")
+    @AuthenticationApiResponses
+    @Validation400ApiResponses
+    @NotFound404ApiResponses
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Successful assign submission",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = Submission.class))}),
+            @ApiResponse(responseCode = "423", description = "The submission is assigned",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class))})
+    })
+    @Transactional
+    @PutMapping("/submissions/{id}/assign")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER') and hasPermission(#id, @assignableSubmission)")
+    public ResponseEntity<SubmissionResponse> assignSubmission(@PathVariable("id") Long id,
+                                                       @RequestBody @Valid AssignPayload assignPayload) {
+        Submission submission = getSubmissionOrElseThrow(id);
+        SafeguardUser user = getUserOrElseThrow(assignPayload.getEmail());
+        Predicate<Role> isReviewer = role -> (role == Role.ADMIN || role == Role.MANAGER || role == Role.SPECIALIST);
+        if (!isReviewer.test(user.getRole())) {
+            throw new IllegalArgumentException("The reviewer has no approval permission");
+        }
+        submission.setStatus(Status.ASSIGNED);
+        submission.setAssignedUser(user);
         Submission saved = submissionRepository.save(submission);
         return ResponseEntity.ok(new SubmissionResponse(saved));
     }
@@ -154,21 +185,16 @@ public class SubmissionController {
                             schema = @Schema(implementation = ErrorResponse.class))})
     })
     @Transactional
-    @PutMapping("/submissions/{id}/assign")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
-    public ResponseEntity<SubmissionResponse> assignSubmission(@PathVariable("id") Long id,
-                                                       @RequestBody @Valid AssignPayload assignPayload) {
+    @PutMapping("/submissions/{id}/approval")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SPECIALIST') and hasPermission(#id, @isAssignedUser)")
+    public ResponseEntity<SubmissionResponse> approvalSubmission(@PathVariable("id") Long id,
+                                                                 @RequestBody @Valid ApprovalPayload approvalPayload) {
         Submission submission = getSubmissionOrElseThrow(id);
-        if (submission.getAssignedUser() != null) {
-            throw new LockedException("The submission is assigned");
-        }
-        SafeguardUser user = getUserOrElseThrow(assignPayload.getEmail());
-        submission.setAssignedUser(user);
+        submission.setStatus(approvalPayload.getStatus());
+        submission.setComment(approvalPayload.getComment());
         Submission saved = submissionRepository.save(submission);
         return ResponseEntity.ok(new SubmissionResponse(saved));
     }
-
-    //todo approval rest
 
     @Operation(summary = "Delete submission", description = "Delete an existing submission")
     @AuthenticationApiResponses

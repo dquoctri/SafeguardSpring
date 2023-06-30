@@ -60,4 +60,13 @@ public class CleanupController {
         byEmail.ifPresent(loginAttemptRepository::delete);
         return ResponseEntity.noContent().build();
     }
+
+    @DeleteMapping("/submissions/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Transactional
+    public ResponseEntity<Void> cleanupLoginAttempt(@PathVariable Long id) {
+        Optional<Submission> byId = submissionRepository.findById(id);
+        byId.ifPresent(submissionRepository::delete);
+        return ResponseEntity.noContent().build();
+    }
 }
