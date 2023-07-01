@@ -159,6 +159,7 @@ public class AuthController {
         }
         LoginAttempt loginAttempt = byId.get();
         loginAttempt.setFailedAttempts(0);
+        loginAttempt.setLockout(false);
         loginAttempt.setLastFailedTimestamp(new Date().getTime());
         loginAttemptRepository.save(loginAttempt);
     }
