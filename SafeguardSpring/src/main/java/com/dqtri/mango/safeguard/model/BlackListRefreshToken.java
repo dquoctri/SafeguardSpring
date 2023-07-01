@@ -19,7 +19,7 @@ public class BlackListRefreshToken extends BaseEntity {
     @Column(name = "email", length = 320, nullable = false)
     private String email;
 
-    @Column(name = "token",nullable = false, unique = true)
+    @Column(name = "token",nullable = false)
     private String token;
 
     @Column(name = "expiration_date", nullable = false)

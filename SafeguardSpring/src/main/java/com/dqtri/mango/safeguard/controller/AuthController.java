@@ -135,10 +135,10 @@ public class AuthController {
         var authenticationToken = new UsernamePasswordAuthenticationToken(login.getEmail(), login.getPassword());
         Authentication authentication = authenticationManager.authenticate(authenticationToken);
         SecurityContextHolder.getContext().setAuthentication(authentication);
+        resetLoginAttempt(loginAttempt.getPk());
         //create tokens
         String refreshToken = refreshTokenProvider.generateToken(authentication);
         String accessToken = accessTokenProvider.generateToken(authentication);
-        loginAttemptRepository.delete(loginAttempt);
         return ResponseEntity.ok(new AuthenticationResponse(refreshToken, accessToken));
     }
 
@@ -148,7 +148,19 @@ public class AuthController {
             throw new LoginFailedException(String.format("%s has been locked due to multiple failed login attempts", email));
         }
         loginAttempt.setFailedAttempts(loginAttempt.getFailedAttempts() + 1);
+        loginAttempt.setLastFailedTimestamp(new Date().getTime());
         return loginAttemptRepository.save(loginAttempt);
+    }
+
+    private void resetLoginAttempt(Long id){
+        Optional<LoginAttempt> byId = loginAttemptRepository.findById(id);
+        if (byId.isEmpty()) {
+            return;
+        }
+        LoginAttempt loginAttempt = byId.get();
+        loginAttempt.setFailedAttempts(0);
+        loginAttempt.setLastFailedTimestamp(new Date().getTime());
+        loginAttemptRepository.save(loginAttempt);
     }
 
     @Operation(summary = "Generates a new access token")
@@ -181,12 +193,12 @@ public class AuthController {
     @PreAuthorize("hasAuthority('REFRESH') or hasRole('REFRESH')")
     public ResponseEntity<Void> logout(@UserPrincipal UserDetails currentUser,
                                        @RequestHeader(HttpHeaders.AUTHORIZATION) @Schema(hidden = true) String refreshToken) {
-        BlackListRefreshToken blackListRefreshToken = createRTBlackList(currentUser.getUsername(), refreshToken);
-        blackListRefreshTokenRepository.save(blackListRefreshToken);
+        var token = createRefreshTokenBlackList(currentUser.getUsername(), refreshToken);
+        blackListRefreshTokenRepository.save(token);
         return ResponseEntity.noContent().build();
     }
 
-    private BlackListRefreshToken createRTBlackList(String email, String refreshToken) {
+    private BlackListRefreshToken createRefreshTokenBlackList(String email, String refreshToken) {
         BlackListRefreshToken blackListRefreshToken = new BlackListRefreshToken();
         blackListRefreshToken.setEmail(email);
         blackListRefreshToken.setToken(refreshToken);

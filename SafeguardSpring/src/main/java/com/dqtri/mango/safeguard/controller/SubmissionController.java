@@ -207,6 +207,9 @@ public class SubmissionController {
     @PreAuthorize("hasAnyRole('ADMIN', 'SUBMITTER') and hasPermission(#id, @submissionOwner)")
     public ResponseEntity<Void> deleteSubmission(@PathVariable("id") Long id) {
         Submission submission = getSubmissionOrElseThrow(id);
+        if (!Status.DRAFT.equals(submission.getStatus())) {
+            throw new LockedException("The submission is locked");
+        }
         submissionRepository.delete(submission);
         return ResponseEntity.noContent().build();
     }

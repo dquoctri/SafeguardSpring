@@ -30,7 +30,7 @@ public class LoginAttempt extends BaseEntity {
     @Column(name = "email", length = 320, nullable = false, unique = true)
     private String email;
 
-    @Min(1)
+    @Min(0)
     @Max(5)
     @Column(name = "failed_attempts", nullable = false)
     private int failedAttempts;

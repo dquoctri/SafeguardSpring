@@ -205,6 +205,7 @@ public class AuthControllerIntegrationTest extends AbstractIntegrationTest {
             LoginPayload loginPayload = createLoginPayload();
             var authentication = new UsernamePasswordAuthenticationToken(loginPayload.getEmail(),
                     loginPayload.getPassword());
+            when(loginAttemptRepository.save(any())).thenReturn(new LoginAttempt());
             when(authenticationManager.authenticate(any())).thenReturn(authentication);
             when(tokenProvider.generateToken(any())).thenReturn("token_value");
             //then
@@ -213,7 +214,7 @@ public class AuthControllerIntegrationTest extends AbstractIntegrationTest {
             AuthenticationResponse authenticationResponse =
                     new ObjectMapper().readValue(json, AuthenticationResponse.class);
             //test
-            verify(loginAttemptRepository, times(1)).delete(any());
+            verify(loginAttemptRepository, times(1)).save(any());
             assertThat(authenticationResponse).isNotNull();
             assertThat(authenticationResponse.getRefreshToken()).isEqualTo("token_value");
             assertThat(authenticationResponse.getAccessToken()).isEqualTo("token_value");
