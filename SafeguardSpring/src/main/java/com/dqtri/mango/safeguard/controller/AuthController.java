@@ -5,6 +5,7 @@
 
 package com.dqtri.mango.safeguard.controller;
 
+import com.dqtri.mango.safeguard.audit.AuditAction;
 import com.dqtri.mango.safeguard.exception.ConflictException;
 import com.dqtri.mango.safeguard.exception.LoginFailedException;
 import com.dqtri.mango.safeguard.model.BlackListRefreshToken;
@@ -86,6 +87,7 @@ public class AuthController {
                             schema = @Schema(implementation = ProblemDetail.class))}),
     })
     @Transactional
+    @AuditAction("REGISTER")
     @PostMapping(value = "/register", consumes = {MediaType.APPLICATION_JSON_VALUE}, produces = {MediaType.APPLICATION_JSON_VALUE})
     public ResponseEntity<UserResponse> register(@RequestBody @Valid RegisterPayload register) {
         checkConflictUserEmail(register.getEmail());
@@ -129,6 +131,7 @@ public class AuthController {
                     content = {@Content(mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponse.class))}),
     })
+    @AuditAction("LOGIN")
     @PostMapping(value = "/login", consumes = {MediaType.APPLICATION_JSON_VALUE}, produces = {MediaType.APPLICATION_JSON_VALUE})
     public ResponseEntity<AuthenticationResponse> login(@RequestBody @Valid LoginPayload login) {
         LoginAttempt loginAttempt = tryLoginAttempt(login.getEmail());
@@ -190,6 +193,7 @@ public class AuthController {
                             schema = @Schema(implementation = ErrorResponse.class))}),
     })
     @SecurityRequirement(name = "refresh_token")
+    @AuditAction("LOGOUT")
     @DeleteMapping("logout")
     @PreAuthorize("hasAuthority('REFRESH') or hasRole('REFRESH')")
     public ResponseEntity<Void> logout(@UserPrincipal UserDetails currentUser,

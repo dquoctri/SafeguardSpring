@@ -9,16 +9,19 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 
+import java.io.Serializable;
 import java.util.Date;
 
 @Setter
 @Getter
+@ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = false)
 @NoArgsConstructor
 @Entity
 @Table(name = "login_attempt")
-public class LoginAttempt extends BaseEntity {
+public class LoginAttempt extends BaseEntity implements Serializable {
 
     public LoginAttempt(String email){
         this.email = email;

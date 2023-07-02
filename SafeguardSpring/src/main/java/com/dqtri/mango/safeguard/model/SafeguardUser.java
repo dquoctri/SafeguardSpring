@@ -12,15 +12,21 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
+import org.hibernate.envers.Audited;
+
+import java.io.Serializable;
 
 
 @Data
 @Setter
 @Getter
+@ToString(callSuper = true, exclude = {"password"})
 @EqualsAndHashCode(callSuper = true, exclude = {"password"})
+@Audited
 @Entity
 @Table(name = "safeguard_user")
-public class SafeguardUser extends BaseEntity {
+public class SafeguardUser extends BaseEntity implements Serializable {
 
     @Schema(example = "registered@dqtri.com")
     @Column(name = "email", length = 320, nullable = false, unique = true)

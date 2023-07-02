@@ -12,10 +12,12 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 import org.hibernate.validator.constraints.Length;
 
 @Setter
 @Getter
+@ToString
 public class SubmissionPayload {
     @NotBlank
     @Length(max = 152)
@@ -30,13 +32,5 @@ public class SubmissionPayload {
         submission.setContent(this.content);
         submission.setStatus(this.status.toStatus());
         return submission;
-    }
-
-    @Override
-    public String toString() {
-        return "SubmissionPayload{" +
-                "content='" + content + '\'' +
-                ", status=" + status +
-                '}';
     }
 }

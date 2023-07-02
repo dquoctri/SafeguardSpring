@@ -1,7 +1,7 @@
 *** Settings ***
 Documentation     This test suite contains test cases to verify the login functionality.
 ...               It covers different scenarios related to logging into the system.
-Test Tags    v1.0.0  API  authentication  login
+Test Tags    API  authentication  login
 Suite Setup    Suite Login API Setup
 Suite Teardown    Suite Login API Teardown
 Test Setup    Test Login API Setup

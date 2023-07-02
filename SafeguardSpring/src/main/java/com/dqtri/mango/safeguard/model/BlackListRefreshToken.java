@@ -6,15 +6,18 @@ import jakarta.persistence.Table;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 
+import java.io.Serializable;
 import java.time.Instant;
 
 @Setter
 @Getter
+@ToString(callSuper = true)
 @Entity
 @EqualsAndHashCode(callSuper = false, exclude = "expirationDate")
 @Table(name = "black_list_refresh_token")
-public class BlackListRefreshToken extends BaseEntity {
+public class BlackListRefreshToken extends BaseEntity implements Serializable {
 
     @Column(name = "email", length = 320, nullable = false)
     private String email;

@@ -1,6 +1,6 @@
 *** Settings ***
 Documentation     This test suite contains test cases to verify the Create User API functionality.
-Test Tags    v1.0.0  user  user_creation
+Test Tags    API  user  user_creation
 Suite Setup    Suite Create User API Setup
 Suite Teardown    Suite Create User API Teardown
 Test Setup    Test Create User API Setup

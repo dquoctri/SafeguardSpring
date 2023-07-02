@@ -27,21 +27,28 @@ public class AccessAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws IOException, ServletException {
-        if (!isPreflightRequest(request) && !isRefreshRequest(request)) {
-            try {
-                String accessToken = getAuthorizationToken(request);
-                if (StringUtils.hasText(accessToken) && validateToken(accessToken)) {
-                    AccessAuthenticationToken accessAuthenticationToken = new AccessAuthenticationToken(accessToken);
-                    Authentication authentication = authenticationManager.authenticate(accessAuthenticationToken);
-                    log.debug("Logging in with [{}]", authentication.getPrincipal());
-                    SecurityContextHolder.getContext().setAuthentication(authentication);
-                }
-            } catch (ProviderNotFoundException e) {
-                log.error(e.getMessage());
-            } catch (Exception e) {
-                log.error("Could not set authentication in security context", e);
-            }
+        if (isPreflightRequest(request) || isRefreshRequest(request)) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+        try {
+            String accessToken = getAuthorizationToken(request);
+            validateAndAuthentication(accessToken);
+        } catch (ProviderNotFoundException e) {
+            log.error(e.getMessage());
+        } catch (Exception e) {
+            log.error("Could not set authentication in security context", e);
         }
         filterChain.doFilter(request, response);
+    }
+
+    private void validateAndAuthentication(String accessToken) {
+        if (!StringUtils.hasText(accessToken) || !validateToken(accessToken)) {
+            return;
+        }
+        AccessAuthenticationToken accessAuthenticationToken = new AccessAuthenticationToken(accessToken);
+        Authentication authentication = authenticationManager.authenticate(accessAuthenticationToken);
+        log.debug("Logging in with [{}]", authentication.getPrincipal());
+        SecurityContextHolder.getContext().setAuthentication(authentication);
     }
 }

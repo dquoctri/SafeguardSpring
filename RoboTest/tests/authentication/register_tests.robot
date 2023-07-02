@@ -1,7 +1,7 @@
 *** Settings ***
 Documentation     This test suite contains test cases to verify the registration functionality.
 ...               It covers different scenarios related to user registration.
-Test Tags  v1.0.0  authentication  register
+Test Tags    API authentication  register
 Suite Setup    Suite Register API Setup
 Suite Teardown    Suite Register API Teardown
 Test Setup    Test Register API Setup

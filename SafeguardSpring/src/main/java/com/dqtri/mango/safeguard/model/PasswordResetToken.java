@@ -11,16 +11,21 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 
+import java.io.Serializable;
 import java.time.Instant;
 
 @Setter
 @Getter
+@EqualsAndHashCode(callSuper = true, exclude = {"expirationDate"})
+@ToString(callSuper = true)
 @Entity
 @Table(name = "password_reset_token")
-public class PasswordResetToken extends BaseEntity {
+public class PasswordResetToken extends BaseEntity implements Serializable {
 
     @Column(nullable = false, unique = true)
     private String token;

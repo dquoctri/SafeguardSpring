@@ -106,7 +106,7 @@ Variables data/master-data/users.py
 
 Tests can be run with the following command (assuming you are in the project root folder RoboTest):
 ```commandline
-robot --include API -d ./results --variable BASE_API_URL=http://localhost:8152/safeguard/api --pythonpath . --timestampoutputs tests
+robot --include API -d ./results --variable BASE_API_URL:http://localhost:8152/safeguard/api --pythonpath . --timestampoutputs tests
 ```
 
 ## How to write configuration file requirements.txt

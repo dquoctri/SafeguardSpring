@@ -3,6 +3,7 @@ package com.dqtri.mango.safeguard.controller;
 import com.dqtri.mango.safeguard.annotation.AuthenticationApiResponses;
 import com.dqtri.mango.safeguard.annotation.NotFound404ApiResponses;
 import com.dqtri.mango.safeguard.annotation.Validation400ApiResponses;
+import com.dqtri.mango.safeguard.audit.AuditAction;
 import com.dqtri.mango.safeguard.exception.ConflictException;
 import com.dqtri.mango.safeguard.model.LoginAttempt;
 import com.dqtri.mango.safeguard.model.SafeguardUser;
@@ -189,6 +190,7 @@ public class UserController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204", description = "Successful deletion of user"),
     })
+    @AuditAction("DELETE_USER")
     @DeleteMapping("/users/{userId}")
     @PreAuthorize("hasRole('ADMIN') and hasPermission(#userId, @updatableResource)")
     public ResponseEntity<Void> deleteUser(@PathVariable("userId") Long userId) {

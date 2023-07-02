@@ -17,20 +17,23 @@ import jakarta.persistence.Temporal;
 import jakarta.persistence.TemporalType;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import java.io.Serializable;
 import java.util.Date;
 import java.util.Objects;
 
-@Entity
-@EntityListeners(AuditingEntityListener.class)
 @Setter
 @Getter
-public class Submission extends BaseEntity {
+@ToString(callSuper = true)
+@Entity
+@EntityListeners(AuditingEntityListener.class)
+public class Submission extends Auditable<String> implements Serializable {
 
     @Column(name = "content", length = 152)
     private String content;
@@ -49,24 +52,6 @@ public class Submission extends BaseEntity {
 
     @Column(name = "comment", length = 1000)
     private String comment;
-
-    @CreatedBy
-    @Column(name = "created_by", updatable = false)
-    private String createdBy;
-
-    @LastModifiedBy
-    @Column(name = "updated_by")
-    private String updatedBy;
-
-    @Temporal(TemporalType.TIMESTAMP)
-    @Column(name = "created_at", nullable = false, updatable = false)
-    @CreatedDate
-    private Date createdAt;
-
-    @Temporal(TemporalType.TIMESTAMP)
-    @Column(name = "updated_at", nullable = false)
-    @LastModifiedDate
-    private Date updatedAt;
 
     @Override
     public boolean equals(Object o) {
