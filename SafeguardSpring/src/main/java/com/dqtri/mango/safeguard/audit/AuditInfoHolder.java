@@ -9,13 +9,21 @@ public class AuditInfoHolder {
         return SingletonHelper.INSTANCE;
     }
 
-    private final ThreadLocal<AuditInfo> thread = new ThreadLocal<>();
+    private final ThreadLocal<AuditInfo> delegate = new ThreadLocal<>();
 
     public AuditInfo getCurrent() {
-        return thread.get();
+        AuditInfo session = delegate.get();
+        if (session != null) {
+            return session;
+        }
+        throw new IllegalArgumentException("Audit Holder is not configured correctly");
     }
 
-    public void setCurrentContext(AuditInfo auditTrailInfo) {
-        thread.set(auditTrailInfo);
+    public void setCurrentContext(AuditInfo auditInfo) {
+        delegate.set(auditInfo);
+    }
+
+    public void incorrectCleanup() {
+        delegate.remove(); // Compliant
     }
 }
