@@ -4,10 +4,12 @@ import com.dqtri.mango.safeguard.model.enums.Status;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 import org.hibernate.validator.constraints.Length;
 
 @Setter
 @Getter
+@ToString
 public class ApprovalPayload {
     @NotNull
     Action action;

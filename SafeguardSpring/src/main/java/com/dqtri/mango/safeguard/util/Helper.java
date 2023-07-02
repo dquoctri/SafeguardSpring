@@ -8,6 +8,8 @@ import java.util.List;
 
 
 public class Helper {
+    private Helper(){}
+
     public static <T> Page<T> createPagination(List<T> content, Page<?> page) {
         return new PageImpl<>(content,
                 PageRequest.of(page.getNumber(), page.getSize(), page.getSort()),

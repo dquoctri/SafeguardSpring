@@ -5,11 +5,13 @@ import com.dqtri.mango.safeguard.model.enums.Role;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 
 import java.util.List;
 
 @Setter
 @Getter
+@ToString
 @NoArgsConstructor
 public class UserResponse {
     private Long id;

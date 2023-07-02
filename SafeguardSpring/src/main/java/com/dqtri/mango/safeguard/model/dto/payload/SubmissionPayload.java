@@ -7,7 +7,6 @@ package com.dqtri.mango.safeguard.model.dto.payload;
 
 import com.dqtri.mango.safeguard.model.Submission;
 import com.dqtri.mango.safeguard.model.dto.payload.enums.ModifyStatus;
-import com.dqtri.mango.safeguard.model.enums.Status;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -31,5 +30,13 @@ public class SubmissionPayload {
         submission.setContent(this.content);
         submission.setStatus(this.status.toStatus());
         return submission;
+    }
+
+    @Override
+    public String toString() {
+        return "SubmissionPayload{" +
+                "content='" + content + '\'' +
+                ", status=" + status +
+                '}';
     }
 }
