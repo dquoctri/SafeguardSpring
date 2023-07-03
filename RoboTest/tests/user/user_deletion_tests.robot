@@ -40,7 +40,7 @@ Suite Delete User API Setup
     Set Suite Variable    ${test_user_id}  ${result}[id]
 
 Suite Delete User API Teardown
-    Delete Test User    ${test1}[email]  ${adminAccessToken}
+    Delete Test User    ${user1}[email]  ${adminAccessToken}
     Logout    ${adminRefreshToken}
 
 Test Delete User API Setup

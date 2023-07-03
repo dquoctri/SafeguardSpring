@@ -17,6 +17,8 @@ import java.lang.annotation.Target;
         @ApiResponse(responseCode = "415", description = "Content-Type '<content-type>' is not supported.",
                 content = {@Content(mediaType = "application/json",
                         schema = @Schema(implementation = ProblemDetail.class))}),
+        @ApiResponse(responseCode = "406", description = "The server cannot produce a response matching the list of acceptable values",
+                content = {@Content(schema = @Schema())}),
 })
-public @interface UnsupportedMediaType415ApiResponses {
+public @interface GlobalApiResponses {
 }

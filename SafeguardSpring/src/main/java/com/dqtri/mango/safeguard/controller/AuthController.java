@@ -44,6 +44,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -76,6 +77,9 @@ public class AuthController {
 
     @Value("${safeguard.auth.refresh.expirationInMs}")
     private long refreshExpirationInMs;
+
+    @Value("${safeguard.auth.login.maximum-failed-attempt}")
+    private int maxFailedAttempt;
 
     @Operation(summary = "Register by providing necessary registration details")
     @ApiResponses(value = {
@@ -134,33 +138,41 @@ public class AuthController {
     @AuditAction("LOGIN")
     @PostMapping(value = "/login", consumes = {MediaType.APPLICATION_JSON_VALUE}, produces = {MediaType.APPLICATION_JSON_VALUE})
     public ResponseEntity<AuthenticationResponse> login(@RequestBody @Valid LoginPayload login) {
-        LoginAttempt loginAttempt = tryLoginAttempt(login.getEmail());
-        var authenticationToken = new UsernamePasswordAuthenticationToken(login.getEmail(), login.getPassword());
-        Authentication authentication = authenticationManager.authenticate(authenticationToken);
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-        resetLoginAttempt(loginAttempt.getPk());
-        //create tokens
-        String refreshToken = refreshTokenProvider.generateToken(authentication);
-        String accessToken = accessTokenProvider.generateToken(authentication);
-        return ResponseEntity.ok(new AuthenticationResponse(refreshToken, accessToken));
+        try {
+            var authenticationToken = new UsernamePasswordAuthenticationToken(login.getEmail(), login.getPassword());
+            Authentication authentication = authenticationManager.authenticate(authenticationToken);
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+            String refreshToken = refreshTokenProvider.generateToken(authentication);
+            String accessToken = accessTokenProvider.generateToken(authentication);
+            resetLoginAttempt(login.getEmail());
+            return ResponseEntity.ok(new AuthenticationResponse(refreshToken, accessToken));
+        } catch (AuthenticationException e){
+            tryLoginAttempt(login.getEmail());
+            throw e;
+        }
     }
 
-    private LoginAttempt tryLoginAttempt(String email) {
+    @Transactional
+    private void tryLoginAttempt(String email) {
         LoginAttempt loginAttempt = loginAttemptRepository.findByEmail(email).orElse(new LoginAttempt(email));
-        if (loginAttempt.isLockout()) {
+        if (maxFailedAttempt > 0 && loginAttempt.isLockout()) {
             throw new LoginFailedException(String.format("%s has been locked due to multiple failed login attempts", email));
         }
-        loginAttempt.setFailedAttempts(loginAttempt.getFailedAttempts() + 1);
+        int nextFailedAttempt = loginAttempt.getFailedAttempts() + 1;
+        if (maxFailedAttempt > 0 && nextFailedAttempt >= maxFailedAttempt){
+            loginAttempt.setLockout(true);
+        }
+        loginAttempt.setFailedAttempts(nextFailedAttempt);
         loginAttempt.setLastFailedTimestamp(new Date().getTime());
-        return loginAttemptRepository.save(loginAttempt);
+        loginAttemptRepository.save(loginAttempt);
     }
 
-    private void resetLoginAttempt(Long id){
-        Optional<LoginAttempt> byId = loginAttemptRepository.findById(id);
-        if (byId.isEmpty()) {
+    @Transactional
+    private void resetLoginAttempt(String email){
+        if (maxFailedAttempt <= 0) {
             return;
         }
-        LoginAttempt loginAttempt = byId.get();
+        LoginAttempt loginAttempt = loginAttemptRepository.findByEmail(email).orElse(new LoginAttempt(email));
         loginAttempt.setFailedAttempts(0);
         loginAttempt.setLockout(false);
         loginAttempt.setLastFailedTimestamp(new Date().getTime());

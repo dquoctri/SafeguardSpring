@@ -105,8 +105,6 @@ Create None and Login with None
     Set Suite Variable    ${noneRefreshToken}  Bearer ${response.json()}[refreshToken]
 
 Suite Authorization Submission APIs Teardown
-#    Delete Test User    ${existed_user}[email]  ${adminAccessToken}
-#    Delete Test User    ${new_user}[email]  ${adminAccessToken}
     Logout    ${managerRefreshToken}
     Logout    ${specialistRefreshToken}
     Logout    ${submitterRefreshToken}

@@ -2,7 +2,7 @@ package com.dqtri.mango.safeguard.controller;
 
 import com.dqtri.mango.safeguard.annotation.AuthenticationApiResponses;
 import com.dqtri.mango.safeguard.annotation.NotFound404ApiResponses;
-import com.dqtri.mango.safeguard.annotation.UnsupportedMediaType415ApiResponses;
+import com.dqtri.mango.safeguard.annotation.GlobalApiResponses;
 import com.dqtri.mango.safeguard.annotation.Validation400ApiResponses;
 import com.dqtri.mango.safeguard.audit.AuditAction;
 import com.dqtri.mango.safeguard.exception.ConflictException;
@@ -53,7 +53,7 @@ import java.util.Optional;
 @RestController
 @RequiredArgsConstructor
 @AuthenticationApiResponses
-@UnsupportedMediaType415ApiResponses
+@GlobalApiResponses
 @SecurityRequirement(name = "access_token")
 @Tag(name = "User API", description = "Endpoints for managing user operations")
 public class UserController {

@@ -7,7 +7,7 @@ package com.dqtri.mango.safeguard.controller;
 
 import com.dqtri.mango.safeguard.annotation.AuthenticationApiResponses;
 import com.dqtri.mango.safeguard.annotation.NotFound404ApiResponses;
-import com.dqtri.mango.safeguard.annotation.UnsupportedMediaType415ApiResponses;
+import com.dqtri.mango.safeguard.annotation.GlobalApiResponses;
 import com.dqtri.mango.safeguard.annotation.Validation400ApiResponses;
 import com.dqtri.mango.safeguard.exception.LockedException;
 import com.dqtri.mango.safeguard.model.SafeguardUser;
@@ -55,7 +55,7 @@ import java.util.function.Predicate;
 @RestController
 @RequiredArgsConstructor
 @AuthenticationApiResponses
-@UnsupportedMediaType415ApiResponses
+@GlobalApiResponses
 @SecurityRequirement(name = "access_token")
 @Tag(name = "Submission API", description = "Endpoints for managing user submissions")
 public class SubmissionController {

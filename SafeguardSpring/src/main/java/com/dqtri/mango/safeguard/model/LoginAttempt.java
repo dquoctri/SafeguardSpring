@@ -34,7 +34,6 @@ public class LoginAttempt extends BaseEntity implements Serializable {
     private String email;
 
     @Min(0)
-    @Max(5)
     @Column(name = "failed_attempts", nullable = false)
     private int failedAttempts;
 
@@ -44,12 +43,12 @@ public class LoginAttempt extends BaseEntity implements Serializable {
     @Column(name = "lockout_status", nullable = false)
     private boolean isLockout = false;
 
-    public void setFailedAttempts(int value){
-        this.failedAttempts = value;
-        if (value >= 5) {
-            this.failedAttempts = 5;
-            this.isLockout = true;
-        }
-    }
+//    public void setFailedAttempts(int value){
+//        this.failedAttempts = value;
+//        if (value >= 5) {
+//            this.failedAttempts = 5;
+//            this.isLockout = true;
+//        }
+//    }
 }
 
