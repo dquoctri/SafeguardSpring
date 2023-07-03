@@ -14,3 +14,5 @@ ${admin1_password}    admin1
 &{none1}    email=none1@dqtri.com  password=none1  role=NONE
 &{user1}    email=test1@dqtri.com  password=test1  role=SUBMITTER
 &{user2}    email=test2@dqtri.com  password=test2  role=SUBMITTER
+&{user3}    email=test3@dqtri.com  password=test3  role=SUBMITTER
+&{user4}    email=test4@dqtri.com  password=test4  role=SUBMITTER

@@ -9,6 +9,7 @@ public class AuditRevisionListener implements RevisionListener {
         AuditInfo audit = AuditInfoHolder.getInstance().getCurrent();
         if (revisionEntity instanceof AuditRevisionEntity auditRevisionEntity){
             auditRevisionEntity.setAction(audit.getAction());
+            auditRevisionEntity.setMethod(audit.getMethod());
             auditRevisionEntity.setUri(audit.getUri());
             auditRevisionEntity.setEmail(audit.getEmail());
             auditRevisionEntity.setDescription(audit.getDescription());

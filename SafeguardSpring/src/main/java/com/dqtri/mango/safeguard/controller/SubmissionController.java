@@ -7,6 +7,7 @@ package com.dqtri.mango.safeguard.controller;
 
 import com.dqtri.mango.safeguard.annotation.AuthenticationApiResponses;
 import com.dqtri.mango.safeguard.annotation.NotFound404ApiResponses;
+import com.dqtri.mango.safeguard.annotation.UnsupportedMediaType415ApiResponses;
 import com.dqtri.mango.safeguard.annotation.Validation400ApiResponses;
 import com.dqtri.mango.safeguard.exception.LockedException;
 import com.dqtri.mango.safeguard.model.SafeguardUser;
@@ -53,6 +54,8 @@ import java.util.function.Predicate;
 
 @RestController
 @RequiredArgsConstructor
+@AuthenticationApiResponses
+@UnsupportedMediaType415ApiResponses
 @SecurityRequirement(name = "access_token")
 @Tag(name = "Submission API", description = "Endpoints for managing user submissions")
 public class SubmissionController {
@@ -61,7 +64,6 @@ public class SubmissionController {
     private final UserRepository userRepository;
 
     @Operation(summary = "Get submissions", description = "Retrieve a paginated list of submissions")
-    @AuthenticationApiResponses
     @Validation400ApiResponses
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successful retrieval a paginated list of submissions",
@@ -81,7 +83,6 @@ public class SubmissionController {
     }
 
     @Operation(summary = "Get submission", description = "Retrieve a submission based on the provided ID")
-    @AuthenticationApiResponses
     @NotFound404ApiResponses
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successful retrieval of submission",
@@ -97,7 +98,6 @@ public class SubmissionController {
     }
 
     @Operation(summary = "Create submission", description = "Create a new submission with the provided details")
-    @AuthenticationApiResponses
     @Validation400ApiResponses
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Successful creation of submission",
@@ -116,7 +116,6 @@ public class SubmissionController {
     }
 
     @Operation(summary = "Update submission", description = "Update an existing submission with the provided details")
-    @AuthenticationApiResponses
     @Validation400ApiResponses
     @NotFound404ApiResponses
     @ApiResponses(value = {
@@ -144,7 +143,6 @@ public class SubmissionController {
     }
 
     @Operation(summary = "Assign submission", description = "Assign submission for specific specialist by email")
-    @AuthenticationApiResponses
     @Validation400ApiResponses
     @NotFound404ApiResponses
     @ApiResponses(value = {
@@ -173,7 +171,6 @@ public class SubmissionController {
     }
 
     @Operation(summary = "Update submission", description = "Update an existing submission with the provided details")
-    @AuthenticationApiResponses
     @Validation400ApiResponses
     @NotFound404ApiResponses
     @ApiResponses(value = {
@@ -197,7 +194,6 @@ public class SubmissionController {
     }
 
     @Operation(summary = "Delete submission", description = "Delete an existing submission")
-    @AuthenticationApiResponses
     @NotFound404ApiResponses
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204", description = "Successful deletion of submission")

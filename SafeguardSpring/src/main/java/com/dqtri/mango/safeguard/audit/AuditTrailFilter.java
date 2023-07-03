@@ -21,6 +21,7 @@ public class AuditTrailFilter extends OncePerRequestFilter {
         AuditInfoHolder instance = AuditInfoHolder.getInstance();
         AuditInfo auditInfo = new AuditInfo();
         auditInfo.setUri(request.getRequestURI());
+        auditInfo.setMethod(request.getMethod());
         auditInfo.setEmail(request.getRemoteUser());
         auditInfo.setDescription(request.getHeader(COMMENTS_HEADER));
         instance.setCurrentContext(auditInfo);

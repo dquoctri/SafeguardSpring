@@ -7,6 +7,7 @@ import lombok.Setter;
 @Getter
 public class AuditInfo {
     private String action;
+    private String method;
     private String uri;
     private String email;
     private String description;

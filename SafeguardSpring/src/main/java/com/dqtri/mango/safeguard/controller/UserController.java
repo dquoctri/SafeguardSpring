@@ -2,6 +2,7 @@ package com.dqtri.mango.safeguard.controller;
 
 import com.dqtri.mango.safeguard.annotation.AuthenticationApiResponses;
 import com.dqtri.mango.safeguard.annotation.NotFound404ApiResponses;
+import com.dqtri.mango.safeguard.annotation.UnsupportedMediaType415ApiResponses;
 import com.dqtri.mango.safeguard.annotation.Validation400ApiResponses;
 import com.dqtri.mango.safeguard.audit.AuditAction;
 import com.dqtri.mango.safeguard.exception.ConflictException;
@@ -51,6 +52,8 @@ import java.util.Optional;
 
 @RestController
 @RequiredArgsConstructor
+@AuthenticationApiResponses
+@UnsupportedMediaType415ApiResponses
 @SecurityRequirement(name = "access_token")
 @Tag(name = "User API", description = "Endpoints for managing user operations")
 public class UserController {
@@ -60,7 +63,6 @@ public class UserController {
     private final LoginAttemptRepository loginAttemptRepository;
 
     @Operation(summary = "Get users", description = "Retrieve a paginated list of users")
-    @AuthenticationApiResponses
     @Validation400ApiResponses
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successful retrieval a paginated list of users",
@@ -79,13 +81,13 @@ public class UserController {
     }
 
     @Operation(summary = "Get user by ID", description = "Retrieve user information based on the provided ID")
-    @AuthenticationApiResponses
     @NotFound404ApiResponses
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successful retrieval of the user",
                     content = {@Content(mediaType = "application/json",
                             schema = @Schema(implementation = UserResponse.class))})
     })
+    @Transactional(readOnly = true)
     @GetMapping("/users/{userId}")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SPECIALIST', 'SUBMITTER')")
     public ResponseEntity<UserResponse> getUser(@PathVariable("userId") Long userId) {
@@ -94,12 +96,12 @@ public class UserController {
     }
 
     @Operation(summary = "Get my profiles", description = "Retrieve profiles of the currently authenticated user")
-    @AuthenticationApiResponses
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successful retrieval of profiles",
                     content = {@Content(mediaType = "application/json",
                             schema = @Schema(implementation = UserResponse.class))}),
     })
+    @Transactional(readOnly = true)
     @GetMapping("/users/me")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<UserResponse> getMyProfiles(@UserPrincipal AppUserDetails currentUser) {
@@ -111,7 +113,6 @@ public class UserController {
     }
 
     @Operation(summary = "Create user", description = "Create a new user with the provided details")
-    @AuthenticationApiResponses
     @Validation400ApiResponses
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successful creation of user",
@@ -121,6 +122,7 @@ public class UserController {
                     content = {@Content(mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponse.class))})
     })
+    @AuditAction("CREATE_USER")
     @PostMapping(value = "/users", consumes = {MediaType.APPLICATION_JSON_VALUE},
             produces = {MediaType.APPLICATION_JSON_VALUE})
     @PreAuthorize("hasRole('ADMIN')")
@@ -151,7 +153,6 @@ public class UserController {
     }
 
     @Operation(summary = "Update user", description = "Update an existing user with the provided details.")
-    @AuthenticationApiResponses
     @Validation400ApiResponses
     @NotFound404ApiResponses
     @ApiResponses(value = {
@@ -159,33 +160,35 @@ public class UserController {
                     content = {@Content(mediaType = "application/json",
                             schema = @Schema(implementation = UserResponse.class))}),
     })
+    @AuditAction("UPDATE_USER")
     @PutMapping("/users/{userId}")
     @PreAuthorize("hasRole('ADMIN') and hasPermission(#userId, @updatableResource)")
     public ResponseEntity<UserResponse> updateUser(@PathVariable("userId") Long userId,
                                                    @Valid @RequestBody UserUpdatingPayload payload) {
         SafeguardUser user = getUserOrElseThrow(userId);
         user.setRole(payload.getRole());
-        return ResponseEntity.ok(new UserResponse(user));
+        SafeguardUser saved = userRepository.save(user);
+        return ResponseEntity.ok(new UserResponse(saved));
     }
 
     @Operation(summary = "Update user password", description = "Update the password of an existing user.")
-    @AuthenticationApiResponses
     @Validation400ApiResponses
     @NotFound404ApiResponses
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successful update of user password"),
     })
+    @AuditAction("UPDATE_USER_PASSWORD")
     @PutMapping("/users/{userId}/password")
     @PreAuthorize("hasRole('ADMIN') and hasPermission(#userId, @updatableResource)")
     public ResponseEntity<Void> updateUserPassword(@PathVariable("userId") Long userId,
                                                    @Valid @RequestBody ResetPasswordPayload payload) {
         SafeguardUser user = getUserOrElseThrow(userId);
         user.setPassword(passwordEncoder.encode(payload.getPassword()));
+        userRepository.save(user);
         return ResponseEntity.ok().build();
     }
 
     @Operation(summary = "Delete user", description = "Delete an existing user.")
-    @AuthenticationApiResponses
     @NotFound404ApiResponses
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204", description = "Successful deletion of user"),
@@ -196,6 +199,7 @@ public class UserController {
     public ResponseEntity<Void> deleteUser(@PathVariable("userId") Long userId) {
         SafeguardUser user = getUserOrElseThrow(userId);
         user.setRole(Role.NONE);
+        userRepository.save(user);
         return ResponseEntity.noContent().build();
     }
 

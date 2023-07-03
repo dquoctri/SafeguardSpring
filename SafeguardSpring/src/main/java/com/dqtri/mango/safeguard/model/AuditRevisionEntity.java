@@ -23,6 +23,9 @@ public class AuditRevisionEntity extends DefaultRevisionEntity implements Serial
     @Column(name = "action", length = 100)
     private String action;
 
+    @Column(name = "method", length = 10)
+    private String method;
+
     @Column(name = "uri", length = 510)
     private String uri;
 
