@@ -3,7 +3,6 @@ package com.dqtri.mango.safeguard.model;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
-import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -42,13 +41,5 @@ public class LoginAttempt extends BaseEntity implements Serializable {
 
     @Column(name = "lockout_status", nullable = false)
     private boolean isLockout = false;
-
-//    public void setFailedAttempts(int value){
-//        this.failedAttempts = value;
-//        if (value >= 5) {
-//            this.failedAttempts = 5;
-//            this.isLockout = true;
-//        }
-//    }
 }
 
