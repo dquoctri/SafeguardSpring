@@ -18,7 +18,8 @@ import java.lang.annotation.Target;
                 content = {@Content(mediaType = "application/json",
                         schema = @Schema(implementation = ProblemDetail.class))}),
         @ApiResponse(responseCode = "406", description = "The server cannot produce a response matching the list of acceptable values",
-                content = {@Content(schema = @Schema())}),
+                content = {@Content(mediaType = "application/json",
+                        schema = @Schema(implementation = ProblemDetail.class))}),
 })
 public @interface GlobalApiResponses {
 }

@@ -1,6 +1,6 @@
 *** Settings ***
 Documentation    Common submission resources for the project
-Resource    ../resources/common.robot
+Resource    ../keywords/common.robot
 Resource    ../resources/api_url.resource
 Library    RequestsLibrary
 

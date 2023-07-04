@@ -5,7 +5,7 @@ Suite Setup    Suite Delete User API Setup
 Suite Teardown    Suite Delete User API Teardown
 Test Setup    Test Delete User API Setup
 Library     RequestsLibrary
-Resource    ../../resources/common.robot
+Resource    ../../keywords/common.robot
 Resource    ../../resources/api_url.resource
 Resource    ../../resources/test_user.resource
 Resource    ../../keywords/authentication.robot

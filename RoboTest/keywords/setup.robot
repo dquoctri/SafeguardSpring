@@ -1,6 +1,6 @@
 *** Settings ***
 Documentation    Common user resources for the project
-Resource    ../resources/common.robot
+Resource    ../keywords/common.robot
 Resource    ../resources/api_url.resource
 Resource    ../resources/test_user.resource
 Resource    ./authentication.robot

@@ -5,7 +5,7 @@ Suite Setup    Suite User APIs Authorization Setup
 Suite Teardown    Suite User APIs Authorization Teardown
 Test Setup    Test User APIs Authorization Setup
 Library     RequestsLibrary
-Resource    ../../resources/common.robot
+Resource    ../../keywords/common.robot
 Resource    ../../resources/api_url.resource
 Resource    ../../resources/test_user.resource
 Resource    ../../keywords/authentication.robot
@@ -67,18 +67,18 @@ Test NO Access Token attempts to Update User got UNAUTHORIZED
 
 Test ADMIN user can Create User
     [Documentation]    This test verifies that a user with the role ADMIN can successfully create a new user.
-    [Tags]    user_author_06  create_user
+    [Tags]    user_author_06  create_user  smoke-test
     ${response}=    Create User    ${new_user}  ${adminAccessToken}  expected_status=201
     Should Users Be Equal    ${response.json()}  ${new_user}
 
 Test ADMIN user can Delete User
     [Documentation]    This test verifies that a user with the role ADMIN can successfully delete an existing user.
-    [Tags]    user_author_07  delete_user
+    [Tags]    user_author_07  delete_user  smoke-test
     Delete User    ${deleting_user_id}  ${adminAccessToken}  expected_status=204
 
 Test ADMIN user can Get All Users
     [Documentation]    This test verifies that a user with the role ADMIN can successfully retrieve all user details.
-    [Tags]    user_author_08  get_users
+    [Tags]    user_author_08  get_users  smoke-test
     ${response}=    Refresh    ${adminRefreshToken}
     ${response}=    Get Users    ${pageCriteria}  Bearer ${response.json()}[accessToken]  expected_status=200
     Should Be Simple Pagination Response    ${response.json()}
@@ -99,14 +99,14 @@ Test SPECIALIST user can Get All Users
 
 Test SUBMITTER user can Get All Users
     [Documentation]    This test verifies that a user with the role SUBMITTER can successfully retrieve all user details.
-    [Tags]    user_author_11  get_users
+    [Tags]    user_author_11  get_users  smoke-test
     ${response}=    Refresh    ${submitterRefreshToken}
     ${response}=    Get Users    ${pageCriteria}  Bearer ${response.json()}[accessToken]  expected_status=200
     Should Be Simple Pagination Response    ${response.json()}
 
 Test ADMIN user can Get User details
     [Documentation]    This test verifies that a user with the role ADMIN can retrieve the details of a specific user.
-    [Tags]    user_author_12  get_user
+    [Tags]    user_author_12  get_user  smoke-test
     ${response}=    Refresh    ${adminRefreshToken}
     ${response}=    Get User    ${existed_user_id}  Bearer ${response.json()}[accessToken]  expected_status=200
     Should Users Be Equal    ${response.json()}  ${existed_user}
@@ -127,14 +127,14 @@ Test SPECIALIST user can Get User details
 
 Test SUBMITTER user can Get User details
     [Documentation]    This test verifies that a user with the role SUBMITTER can retrieve the details of a specific user.
-    [Tags]    user_author_15  get_user
+    [Tags]    user_author_15  get_user  smoke-test
     ${response}=    Refresh    ${submitterRefreshToken}
     ${response}=    Get User    ${existed_user_id}  Bearer ${response.json()}[accessToken]  expected_status=200
     Should Users Be Equal    ${response.json()}  ${existed_user}
 
 Test ADMIN user can Update User
     [Documentation]    This test verifies that a user with the role ADMIN can update the details of a specific user with the provided payload.
-    [Tags]    user_author_16  update_user
+    [Tags]    user_author_16  update_user  smoke-test
     ${response}=    Refresh    ${adminRefreshToken}
     ${accessToken}    Set Variable    Bearer ${response.json()}[accessToken]
     ${response}=    Update User    ${updating_user_id}  ${specialistPayload}  ${accessToken}  expected_status=200
@@ -159,7 +159,7 @@ Test SPECIALIST user attempt to Create User got Access Denied
 
 Test SUBMITTER user attempt to Create User got Access Denied
     [Documentation]    This test verifies that a user with the role SUBMITTER is denied access when attempting to create a new user.
-    [Tags]    user_author_19  create_user  forbidden
+    [Tags]    user_author_19  create_user  forbidden  smoke-test
     ${response}=    Refresh    ${submitterRefreshToken}
     ${response}=    Create User    ${new_user}  Bearer ${response.json()}[accessToken]  expected_status=403
     Should Be Access Denied    ${response}
@@ -187,7 +187,7 @@ Test SPECIALIST user attempt to Delete User got Access Denied
 
 Test SUBMITTER user attempt to Delete User got Access Denied
     [Documentation]    This test verifies that a user with the role SUBMITTER is denied access when attempting to delete a user.
-    [Tags]    user_author_23  delete_user  forbidden
+    [Tags]    user_author_23  delete_user  forbidden  smoke-test
     ${response}=    Refresh    ${submitterRefreshToken}
     ${response}=    Delete User    ${deleting_user_id}  Bearer ${response.json()}[accessToken]  expected_status=403
     Should Be Access Denied    ${response}
@@ -231,7 +231,7 @@ Test SPECIALIST user attempt to Update User got Access Denied
 
 Test SUBMITTER user attempt to Update User got Access Denied
     [Documentation]    This test verifies that a user with the role SUBMITTER is denied access when attempting to update the details of a specific user.
-    [Tags]    user_author_29  update_user  forbidden
+    [Tags]    user_author_29  update_user  forbidden  smoke-test
     ${response}=    Refresh    ${submitterRefreshToken}
     ${accessToken}    Set Variable    Bearer ${response.json()}[accessToken]
     ${response}=    Update User    ${updating_user_id}  ${specialistPayload}  ${accessToken}  expected_status=403

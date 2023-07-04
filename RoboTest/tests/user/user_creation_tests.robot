@@ -5,7 +5,7 @@ Suite Setup    Suite Create User API Setup
 Suite Teardown    Suite Create User API Teardown
 Test Setup    Test Create User API Setup
 Library     RequestsLibrary
-Resource    ../../resources/common.robot
+Resource    ../../keywords/common.robot
 Resource    ../../resources/api_url.resource
 Resource    ../../resources/test_user.resource
 Resource    ../../keywords/authentication.robot
