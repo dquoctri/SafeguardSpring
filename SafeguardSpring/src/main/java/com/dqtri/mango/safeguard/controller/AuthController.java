@@ -21,6 +21,7 @@ import com.dqtri.mango.safeguard.model.enums.Role;
 import com.dqtri.mango.safeguard.repository.BlackListRefreshTokenRepository;
 import com.dqtri.mango.safeguard.repository.LoginAttemptRepository;
 import com.dqtri.mango.safeguard.repository.UserRepository;
+import com.dqtri.mango.safeguard.security.BasicUserDetails;
 import com.dqtri.mango.safeguard.security.TokenProvider;
 import com.dqtri.mango.safeguard.security.UserPrincipal;
 import io.swagger.v3.oas.annotations.Hidden;
@@ -142,10 +143,12 @@ public class AuthController {
             var authenticationToken = new UsernamePasswordAuthenticationToken(login.getEmail(), login.getPassword());
             Authentication authentication = authenticationManager.authenticate(authenticationToken);
             SecurityContextHolder.getContext().setAuthentication(authentication);
+            BasicUserDetails principal = (BasicUserDetails) authentication.getPrincipal();
+            SafeguardUser safeguardUser = principal.getSafeguardUser();
             String refreshToken = refreshTokenProvider.generateToken(authentication);
             String accessToken = accessTokenProvider.generateToken(authentication);
             resetLoginAttempt(login.getEmail());
-            return ResponseEntity.ok(new AuthenticationResponse(refreshToken, accessToken));
+            return ResponseEntity.ok(new AuthenticationResponse(safeguardUser.getEmail(), safeguardUser.getRole(), safeguardUser.getEmail(), refreshToken, accessToken));
         } catch (AuthenticationException e){
             tryLoginAttempt(login.getEmail());
             throw e;

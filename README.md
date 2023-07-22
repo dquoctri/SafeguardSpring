@@ -1,3 +1,6 @@
+# Mango
+Study spring security in best practic
+
 # SafeguardSpring
 Spring Security is a powerful and highly customizable authentication and access-control framework. It is the de-facto standard for securing Spring-based applications​
 
@@ -33,10 +36,20 @@ docker run --name submission-postgres -p5432:5432 -e POSTGRES_DB=submission-post
 docker exec -it submission-postgres sh -c "createdb -U postgres auth-postgres;"
 ```
 
-JDK 17
+## JDK 17
+[Download](https://www.oracle.com/java/technologies/downloads/#java17) jdk-17_windows-x64_bin.msi
 
-Postman
+## Postman
+Postman is available for Windows 7 and later.
 
-Intellij
+[Download](https://www.postman.com/downloads/) the latest Postman version.
+Select and run the .exe file to install Postman.
 
-pycharm
+IntelliJ IDEA Community Edition
+The IDE for pure Java and Kotlin development
+
+start this project with IntelliJ
+```
+https://github.com/dquoctri/Mango.git
+
+```
